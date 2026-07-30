@@ -1,0 +1,2235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RMBF Perundurai — Rotary Means Business Fellowship</title>
+<style>
+:root{
+  --blue:#17458F; --blue-dk:#0E2E63; --blue-lt:#2C63C4;
+  --gold:#F7A81B; --gold-lt:#FDF3DA; --gold-mid:#FBD97C;
+  --white:#ffffff; --bg:#F4F7FC; --ink:#1B2436; --muted:#6B7891;
+  --line:#DDE5F2; --green:#1E8E5A; --green-bg:#E6F6EE;
+  --red:#C0392B; --red-bg:#FDECEA; --shadow:0 2px 14px rgba(23,69,143,.08);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',system-ui,-apple-system,Roboto,Arial,sans-serif;background:var(--bg);color:var(--ink);font-size:14px;line-height:1.5}
+h1,h2,h3,h4{color:var(--blue);font-weight:700;line-height:1.25}
+a{color:var(--blue-lt);text-decoration:none}
+.hide{display:none!important}
+
+/* ---------- Brand bar ---------- */
+.brandbar{background:var(--white);border-bottom:3px solid var(--gold);padding:9px 22px;display:flex;align-items:center;gap:16px;box-shadow:var(--shadow);position:sticky;top:0;z-index:50;flex-wrap:wrap}
+.brandlogo{height:52px;width:auto;display:block}
+.hero-logo{height:74px;width:auto;margin:0 auto 16px;display:block}
+.spacer{flex:1}
+.who{text-align:right;font-size:12px;color:var(--muted)}
+.who b{display:block;font-size:14px;color:var(--blue)}
+
+/* ---------- Buttons ---------- */
+.btn{background:var(--blue);color:#fff;border:none;padding:10px 18px;border-radius:7px;font-size:14px;font-weight:600;cursor:pointer;transition:.15s;font-family:inherit}
+.btn:hover{background:var(--blue-dk)}
+.btn.gold{background:var(--gold);color:#3A2A00}
+.btn.gold:hover{background:#e09807}
+.btn.ghost{background:#fff;color:var(--blue);border:1.5px solid var(--blue)}
+.btn.ghost:hover{background:var(--gold-lt)}
+.btn.sm{padding:6px 12px;font-size:12.5px}
+.btn.danger{background:var(--red)}
+.btn.ok{background:var(--green)}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+
+/* ---------- Cards / forms ---------- */
+.card{background:#fff;border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);overflow:hidden;margin-bottom:20px}
+.card>h3{padding:14px 18px;border-bottom:1px solid var(--line);background:linear-gradient(90deg,var(--gold-lt),#fff);font-size:15.5px;border-left:4px solid var(--gold)}
+.card-body{padding:18px}
+label{display:block;font-size:12.5px;font-weight:600;color:var(--blue);margin-bottom:5px}
+label .req{color:var(--red)}
+input,select,textarea{width:100%;padding:10px 12px;border:1.5px solid var(--line);border-radius:7px;font-size:14px;font-family:inherit;background:#fff;color:var(--ink)}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--gold);box-shadow:0 0 0 3px var(--gold-lt)}
+textarea{resize:vertical;min-height:90px}
+.grid{display:grid;gap:14px}
+.g2{grid-template-columns:1fr 1fr}
+.g3{grid-template-columns:repeat(3,1fr)}
+.g4{grid-template-columns:repeat(4,1fr)}
+.field{margin-bottom:0}
+.hint{font-size:11.5px;color:var(--muted);margin-top:4px}
+
+/* ---------- Login ---------- */
+.login-wrap{min-height:calc(100vh - 72px);display:flex;align-items:flex-start;justify-content:center;padding:36px 18px 60px}
+.login-box{width:100%;max-width:520px}
+.tabs{display:flex;background:#fff;border:1px solid var(--line);border-radius:10px;overflow:hidden;margin-bottom:18px;box-shadow:var(--shadow)}
+.tab{flex:1;padding:13px;text-align:center;font-weight:700;font-size:14px;cursor:pointer;color:var(--muted);background:#fff;border:none;font-family:inherit;border-bottom:3px solid transparent}
+.tab.on{color:var(--blue);background:var(--gold-lt);border-bottom-color:var(--gold)}
+.hero{text-align:center;margin-bottom:20px}
+.hero h1{font-size:26px}
+.hero p{color:var(--muted);font-size:13.5px;margin-top:6px}
+.regbox{max-width:900px}
+
+/* ---------- Nav ---------- */
+.nav{background:var(--blue);display:flex;gap:2px;padding:0 22px;overflow-x:auto;position:sticky;top:69px;z-index:40}
+.nav button{background:transparent;border:none;color:#C9D8F2;padding:13px 16px;font-size:13.5px;font-weight:600;cursor:pointer;white-space:nowrap;font-family:inherit;border-bottom:3px solid transparent}
+.nav button:hover{color:#fff;background:rgba(255,255,255,.07)}
+.nav button.on{color:#fff;border-bottom-color:var(--gold);background:rgba(247,168,27,.14)}
+.nav .pill{background:var(--gold);color:#3A2A00;border-radius:10px;padding:1px 7px;font-size:11px;font-weight:800;margin-left:6px}
+
+main{padding:22px;max-width:1240px;margin:0 auto}
+.page-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:16px;flex-wrap:wrap}
+.page-head h2{font-size:20px}
+.page-head p{color:var(--muted);font-size:13px}
+
+/* ---------- Stats ---------- */
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:14px;margin-bottom:22px}
+.stat{background:#fff;border:1px solid var(--line);border-left:5px solid var(--gold);border-radius:11px;padding:16px 18px;box-shadow:var(--shadow)}
+.stat .lbl{font-size:11.5px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.6px}
+.stat .val{font-size:26px;font-weight:800;color:var(--blue);margin-top:6px}
+.stat .sub{font-size:11.5px;color:var(--muted);margin-top:2px}
+.stat.b{border-left-color:var(--blue)}
+.stat.g{border-left-color:var(--green)}
+
+/* ---------- Table ---------- */
+.tbl-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:13.3px}
+th{background:var(--blue);color:#fff;text-align:left;padding:11px 12px;font-weight:700;font-size:12px;text-transform:uppercase;letter-spacing:.5px;white-space:nowrap}
+td{padding:11px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+tbody tr:nth-child(even){background:#FAFCFF}
+tbody tr:hover{background:var(--gold-lt)}
+.empty{padding:34px;text-align:center;color:var(--muted);font-size:13.5px}
+.tag{display:inline-block;padding:3px 10px;border-radius:20px;font-size:11.5px;font-weight:700;white-space:nowrap}
+.tag.pend{background:var(--gold-lt);color:#8A6100;border:1px solid var(--gold-mid)}
+.tag.conv{background:var(--green-bg);color:var(--green);border:1px solid #A9DCC3}
+.tag.no{background:var(--red-bg);color:var(--red);border:1px solid #F1C0BA}
+.tag.blue{background:#E8EFFB;color:var(--blue);border:1px solid #BFD2F0}
+.money{font-weight:700;color:var(--green);white-space:nowrap}
+.toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;margin-bottom:14px}
+.toolbar>div{min-width:150px}
+.msg{padding:11px 14px;border-radius:8px;font-size:13.3px;margin-bottom:14px;font-weight:600}
+.msg.ok{background:var(--green-bg);color:var(--green);border:1px solid #A9DCC3}
+.msg.err{background:var(--red-bg);color:var(--red);border:1px solid #F1C0BA}
+.msg.info{background:var(--gold-lt);color:#8A6100;border:1px solid var(--gold-mid)}
+
+/* ---------- Modal ---------- */
+.overlay{position:fixed;inset:0;background:rgba(14,46,99,.55);display:flex;align-items:center;justify-content:center;padding:18px;z-index:100}
+.modal{background:#fff;border-radius:13px;max-width:520px;width:100%;max-height:90vh;overflow:auto;box-shadow:0 12px 50px rgba(0,0,0,.3)}
+.modal h3{padding:15px 18px;border-bottom:1px solid var(--line);background:linear-gradient(90deg,var(--gold-lt),#fff);border-left:4px solid var(--gold)}
+.modal-body{padding:18px}
+.modal-foot{padding:14px 18px;border-top:1px solid var(--line);display:flex;gap:10px;justify-content:flex-end;background:#FAFCFF}
+.kv{display:grid;grid-template-columns:135px 1fr;gap:8px 12px;font-size:13.3px}
+.kv .k{font-weight:700;color:var(--muted)}
+.quote{background:var(--gold-lt);border-left:3px solid var(--gold);padding:11px 13px;border-radius:0 7px 7px 0;font-size:13.3px;margin:12px 0}
+.foot{text-align:center;padding:24px;color:var(--muted);font-size:12px;border-top:1px solid var(--line);margin-top:22px}
+.badge-count{background:var(--gold);color:#3A2A00;font-weight:800;border-radius:20px;padding:1px 8px;font-size:11.5px}
+.celeb{display:flex;align-items:center;gap:12px;padding:11px 13px;border:1px solid var(--line);border-radius:9px;margin-bottom:9px;background:#fff}
+.celeb .d{background:var(--blue);color:#fff;border-radius:8px;padding:6px 10px;text-align:center;min-width:52px}
+.celeb .d span{display:block;font-size:17px;font-weight:800;line-height:1}
+.celeb .d small{font-size:10px;text-transform:uppercase;letter-spacing:.5px}
+.celeb.today .d{background:var(--gold);color:#3A2A00}
+/* password show/hide */
+.pw{position:relative}
+.pw input{padding-right:70px}
+.pw .eye{position:absolute;right:6px;top:50%;transform:translateY(-50%);background:var(--gold-lt);border:1px solid var(--gold-mid);color:#8A6100;font-size:11.5px;font-weight:700;padding:6px 10px;border-radius:6px;cursor:pointer;font-family:inherit;line-height:1}
+.pw .eye:hover{background:var(--gold-mid);color:#3A2A00}
+@media(max-width:760px){.g2,.g3,.g4{grid-template-columns:1fr}.brandbar{padding:9px 14px}main{padding:14px}.nav{top:auto;position:static}.brandlogo{height:40px}.hero-logo{height:56px}}
+@media print{.nav,.brandbar .spacer,.btn{display:none}}
+</style>
+</head>
+<body>
+
+<!-- ======================= BRAND BAR ======================= -->
+<div class="brandbar">
+  <img class="brandlogo" src="data:image/png;base64,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" alt="Rotary Means Business Fellowship, Perundurai">
+  <div class="spacer"></div>
+  <div id="whoBox" class="hide">
+    <div style="display:flex;align-items:center;gap:12px">
+      <div class="who"><b id="whoName">—</b><span id="whoRole">—</span></div>
+      <div id="whoAv"></div>
+      <button class="btn ghost sm" onclick="logout()">Logout</button>
+    </div>
+  </div>
+</div>
+
+<!-- ======================= NAV ======================= -->
+<div class="nav hide" id="nav"></div>
+
+<!-- ======================= AUTH SCREEN ======================= -->
+<div id="authScreen" class="login-wrap">
+  <div class="login-box" id="loginBox">
+    <div class="hero">
+      <img class="hero-logo" src="data:image/png;base64,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" alt="Rotary Means Business Fellowship, Perundurai">
+      <h1>RMBF Business Forum</h1>
+      <p>Referral &amp; Business Exchange Portal</p>
+    </div>
+    <div class="tabs">
+      <button class="tab on" id="tabMember" onclick="showTab('member')">Member Login</button>
+      <button class="tab" id="tabAdmin" onclick="showTab('admin')">Admin Login</button>
+    </div>
+
+    <!-- Member login -->
+    <div class="card" id="paneMember">
+      <h3>Member Sign In</h3>
+      <div class="card-body">
+        <div id="mLoginMsg"></div>
+        <div class="grid" style="gap:14px">
+          <div class="field">
+            <label>Select Your Name <span class="req">*</span></label>
+            <select id="loginMemberSel"></select>
+            <div class="hint">Only admin-approved members appear in this list.</div>
+          </div>
+          <div class="field">
+            <label>Password <span class="req">*</span></label>
+            <div class="pw">
+              <input type="password" id="loginMemberPass" placeholder="Enter your password"
+                     onkeydown="if(event.key==='Enter')memberLogin()">
+              <button type="button" class="eye" onclick="togglePw('loginMemberPass',this)">Show</button>
+            </div>
+          </div>
+          <button class="btn" onclick="memberLogin()">Login as Member</button>
+        </div>
+        <hr style="margin:18px 0;border:none;border-top:1px solid var(--line)">
+        <div style="text-align:center;font-size:13.3px">
+          New to RMBF? <a href="#" onclick="showRegister();return false"><b>Register as a Member →</b></a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Admin login -->
+    <div class="card hide" id="paneAdmin">
+      <h3>Administrator Sign In</h3>
+      <div class="card-body">
+        <div id="aLoginMsg"></div>
+        <div class="grid" style="gap:14px">
+          <div class="field">
+            <label>Admin Username <span class="req">*</span></label>
+            <input id="loginAdminUser" value="admin" placeholder="admin" autocomplete="off">
+          </div>
+          <div class="field">
+            <label>Password <span class="req">*</span></label>
+            <div class="pw">
+              <input type="password" id="loginAdminPass" placeholder="Enter admin password"
+                     onkeydown="if(event.key==='Enter')adminLogin()">
+              <button type="button" class="eye" onclick="togglePw('loginAdminPass',this)">Show</button>
+            </div>
+          </div>
+          <button class="btn" onclick="adminLogin()">Login as Admin</button>
+        </div>
+        <div class="msg info" style="margin:16px 0 0">
+          Administrator access only. Change your password from <b>Settings</b> after your first sign-in.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Registration -->
+  <div class="login-box regbox hide" id="registerBox">
+    <div class="hero">
+      <h1>Member Registration</h1>
+      <p>Complete the form below. Your login is activated once the admin approves your application.</p>
+    </div>
+    <div class="card">
+      <h3>Member Details</h3>
+      <div class="card-body">
+        <div id="regMsg"></div>
+        <div class="grid g2">
+          <div class="field"><label>Full Name <span class="req">*</span></label><input id="rName" placeholder="e.g. Rtn. Inbaraj K"></div>
+          <div class="field"><label>Mobile Number <span class="req">*</span></label><input id="rPhone" placeholder="10-digit mobile" maxlength="15"></div>
+          <div class="field"><label>Email ID <span class="req">*</span></label><input id="rEmail" type="email" placeholder="name@example.com"></div>
+          <div class="field"><label>Company / Firm Name <span class="req">*</span></label><input id="rCompany" placeholder="e.g. Sri Balaji Textiles"></div>
+          <div class="field"><label>Business Vertical <span class="req">*</span></label><select id="rVertical"></select></div>
+          <div class="field"><label>Blood Group</label><select id="rBlood"></select></div>
+          <div class="field"><label>Date of Birth <span class="req">*</span></label>
+            <input id="rDob" type="text" inputmode="numeric" maxlength="10" placeholder="dd/mm/yyyy" oninput="dateMask(this)" autocomplete="off">
+            <div class="hint">Type day, month, year — e.g. 14/08/1982</div></div>
+          <div class="field"><label>Marriage Date</label>
+            <input id="rMarriage" type="text" inputmode="numeric" maxlength="10" placeholder="dd/mm/yyyy" oninput="dateMask(this)" autocomplete="off">
+            <div class="hint">Optional — leave blank if not applicable.</div></div>
+          <div class="field" style="grid-column:1/-1"><label>Profile Photo</label>
+            <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
+              <div id="regPhotoBox"></div>
+              <input type="file" id="rPhotoFile" accept="image/*" class="hide" onchange="pickRegPhoto(this)">
+              <button type="button" class="btn ghost sm" onclick="document.getElementById('rPhotoFile').click()">Choose Photo</button>
+              <button type="button" class="btn ghost sm" onclick="REG_PHOTO='';paintRegPhoto()">Remove</button>
+              <span class="hint" style="margin:0">Optional. JPG or PNG — it is cropped to a square automatically.</span>
+            </div>
+          </div>
+          <div class="field" style="grid-column:1/-1"><label>Address <span class="req">*</span></label><textarea id="rAddr" placeholder="Door no, street, area, Perundurai, pincode"></textarea></div>
+          <div class="field"><label>Choose a Username <span class="req">*</span></label>
+            <input id="rUser" placeholder="e.g. inbaraj.k" autocomplete="off" maxlength="30">
+            <div class="hint">This is what you log in with. Letters, numbers, dot, dash or underscore.</div></div>
+          <div class="field"></div>
+          <div class="field"><label>Create Password <span class="req">*</span></label>
+            <div class="pw"><input id="rPass" type="password" placeholder="Minimum 6 characters">
+              <button type="button" class="eye" onclick="togglePw('rPass',this)">Show</button></div></div>
+          <div class="field"><label>Confirm Password <span class="req">*</span></label>
+            <div class="pw"><input id="rPass2" type="password" placeholder="Re-enter password">
+              <button type="button" class="eye" onclick="togglePw('rPass2',this)">Show</button></div></div>
+        </div>
+        <div style="display:flex;gap:10px;margin-top:20px;flex-wrap:wrap">
+          <button class="btn" onclick="submitRegistration()">Save &amp; Submit for Approval</button>
+          <button class="btn ghost" onclick="showLogin()">Back to Login</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ======================= APP ======================= -->
+<main id="app" class="hide"></main>
+<div class="foot" id="foot">RMBF Perundurai — Rotary Means Business Fellowship &nbsp;|&nbsp; Referral &amp; Business Exchange Portal</div>
+<div id="modalHost"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script>
+/* ===== Supabase project (publishable key — safe to ship in the browser) ===== */
+const SUPABASE_URL = 'https://zpqzvnnmvetzwaenjuai.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_nGs6QnJuEOMNv1_8mQOKcw_4g-GSHJ7';
+const LOGIN_DOMAIN = '@rmbf.app';
+</script>
+
+<script>
+/* =========================================================
+   RMBF BUSINESS FORUM — single-file web app
+   Data is stored in this browser (localStorage key: rmbf_v1)
+   ========================================================= */
+
+const DEFAULT_VERTICALS = ["Textiles & Garments","Engineering & Manufacturing","Automobile & Spares","Construction & Real Estate",
+  "Electrical & Electronics","Hardware & Building Material","Agriculture & Agri-Inputs","Poultry & Dairy",
+  "Food, Bakery & Catering","Hotels & Restaurants","Retail & Supermarket","Jewellery","Printing & Packaging",
+  "Transport & Logistics","Banking, Finance & Insurance","Chartered Accountancy & Audit","Legal Services",
+  "Healthcare & Hospitals","Pharmacy & Medical Devices","Education & Training","IT & Software","Digital Marketing & Media",
+  "Travel & Tourism","Event Management","Interior & Furniture","Solar & Renewable Energy","Chemicals & Plastics",
+  "Water Treatment & Plumbing","Security & Facility Services","Consulting & HR","Others"];
+const BLOOD = ["A+","A-","B+","B-","O+","O-","AB+","AB-","Not known"];
+const KEY = 'rmbf_v1';
+
+/* ---------- tiny hash (obfuscation only — not real security) ---------- */
+function hash(s){let h=5381;s=String(s);for(let i=0;i<s.length;i++)h=((h<<5)+h+s.charCodeAt(i))>>>0;return 'h'+h.toString(36);}
+
+/* ---------- store ---------- */
+let DB = null, SESSION = null, CUR = 'dash';
+
+function blank(){return {members:[],referrals:[],r2r:[],verticals:DEFAULT_VERTICALS.slice(),
+  admin:{user:'admin',pass:hash('admin@123')},seq:{m:1,r:1,x:1}};}
+function load(){
+  try{const raw=localStorage.getItem(KEY);DB=raw?JSON.parse(raw):blank();}catch(e){DB=blank();}
+  normalize();
+}
+function normalize(){
+  if(!DB.members)DB.members=[];if(!DB.referrals)DB.referrals=[];if(!DB.r2r)DB.r2r=[];
+  if(!DB.admin)DB.admin={user:'admin',pass:hash('admin@123')};
+  if(!DB.seq)DB.seq={};
+  if(!DB.seq.m)DB.seq.m=DB.members.length+1;
+  if(!DB.seq.r)DB.seq.r=DB.referrals.length+1;
+  if(!DB.seq.x)DB.seq.x=DB.r2r.length+1;
+  // seed / repair the admin-managed vertical list
+  if(!Array.isArray(DB.verticals)||!DB.verticals.length)DB.verticals=DEFAULT_VERTICALS.slice();
+  DB.members.forEach(m=>{if(m.vertical&&DB.verticals.indexOf(m.vertical)<0)DB.verticals.push(m.vertical);});
+}
+function verts(){return DB.verticals.slice().sort((a,b)=>a==='Others'?1:b==='Others'?-1:a.localeCompare(b));}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(DB));}catch(e){alert('Could not save data: '+e.message);}}
+function mid(){return 'M'+String(DB.seq.m++).padStart(3,'0');}
+function rid(){return 'R'+String(DB.seq.r++).padStart(4,'0');}
+function xid(){return 'X'+String(DB.seq.x++).padStart(4,'0');}
+function member(id){return DB.members.find(m=>m.id===id)||null;}
+function mname(id){const m=member(id);return m?m.name:'(removed member)';}
+function approved(){return DB.members.filter(m=>m.status==='approved').sort((a,b)=>a.name.localeCompare(b.name));}
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function inr(n){n=Number(n)||0;return '₹'+n.toLocaleString('en-IN');}
+function today(){return new Date().toISOString().slice(0,10);}
+function dmy(d){if(!d)return '—';const p=String(d).slice(0,10).split('-');return p.length===3?p[2]+'/'+p[1]+'/'+p[0]:d;}
+
+/* ---------- dd/mm/yyyy date entry ----------
+   The browser's native date box follows the computer's regional setting, so it
+   cannot be forced to dd/mm/yyyy. These fields are plain typed inputs instead,
+   masked and validated as dd/mm/yyyy, and stored internally as yyyy-mm-dd.     */
+function dateMask(inp){
+  const del=inp.value.length<(inp.dataset.prev||'').length;
+  const v=inp.value.replace(/\D/g,'').slice(0,8);
+  let out=v;
+  if(v.length>4)out=v.slice(0,2)+'/'+v.slice(2,4)+'/'+v.slice(4);
+  else if(v.length>2)out=v.slice(0,2)+'/'+v.slice(2);
+  if(!del&&(v.length===2||v.length===4))out+='/';
+  inp.value=out;
+  inp.dataset.prev=out;
+}
+// '' = blank, null = invalid, otherwise 'yyyy-mm-dd'
+function toISO(s){
+  s=String(s==null?'':s).trim();
+  if(!s)return '';
+  const m=s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if(!m)return null;
+  const d=+m[1],mo=+m[2],y=+m[3];
+  if(mo<1||mo>12||d<1||y<1900||y>2200)return null;
+  if(d>new Date(y,mo,0).getDate())return null;
+  return y+'-'+String(mo).padStart(2,'0')+'-'+String(d).padStart(2,'0');
+}
+function dateField(id,iso,extra){
+  return `<input id="${id}" type="text" inputmode="numeric" maxlength="10" placeholder="dd/mm/yyyy" `
+       + `value="${iso?dmy(iso):''}" oninput="dateMask(this)" autocomplete="off"${extra||''}>`;
+}
+
+/* ---------- password show / hide ---------- */
+function togglePw(id,btn){
+  const el=document.getElementById(id);if(!el)return;
+  const showing=el.type==='password';
+  el.type=showing?'text':'password';
+  btn.textContent=showing?'Hide':'Show';
+  el.focus();
+}
+// builds a password input with a Show/Hide button (for views rendered from JS)
+function pwInput(id,ph,val){
+  return `<div class="pw"><input type="password" id="${id}" placeholder="${ph||''}" value="${val||''}">`
+       + `<button type="button" class="eye" onclick="togglePw('${id}',this)">Show</button></div>`;
+}
+function stamp(){return new Date().toISOString();}
+
+/* ---------- metrics ---------- */
+function stats(id){
+  const given = DB.referrals.filter(r=>r.fromId===id);
+  const recd  = DB.referrals.filter(r=>r.toId===id);
+  const sum   = a => a.filter(r=>r.status==='converted').reduce((t,r)=>t+(Number(r.value)||0),0);
+  return {
+    given:given.length, recd:recd.length,
+    pendingRecd:recd.filter(r=>r.status==='pending').length,
+    pendingGiven:given.filter(r=>r.status==='pending').length,
+    convGiven:given.filter(r=>r.status==='converted').length,
+    convRecd:recd.filter(r=>r.status==='converted').length,
+    businessGiven:sum(given),   // value of business I passed to others (converted)
+    businessTaken:sum(recd),    // value of business I received & converted
+    r2r:myR2R(id).length,
+    r2rLogged:DB.r2r.filter(x=>x.loggedBy===id).length
+  };
+}
+function myR2R(id){return DB.r2r.filter(x=>x.aId===id||x.bId===id);}
+function r2rPartner(x,id){return x.aId===id?x.bId:x.aId;}
+
+/* ---------- period helpers (for R2R reporting) ---------- */
+function periodStart(p){
+  const d=new Date();d.setHours(0,0,0,0);
+  if(p==='week'){const dow=(d.getDay()+6)%7;d.setDate(d.getDate()-dow);return d;}      // Monday
+  if(p==='month')return new Date(d.getFullYear(),d.getMonth(),1);
+  if(p==='6m'){const x=new Date(d);x.setMonth(x.getMonth()-6);return x;}
+  if(p==='year')return new Date(d.getFullYear(),0,1);
+  return null;
+}
+function inPeriod(dateStr,p){
+  if(!p||p==='all')return true;
+  const s=periodStart(p);if(!s)return true;
+  const d=new Date(String(dateStr).slice(0,10)+'T00:00:00');
+  if(isNaN(d))return false;
+  return d>=s;
+}
+function r2rCount(p,id){
+  return DB.r2r.filter(x=>inPeriod(x.date,p)&&(!id||x.aId===id||x.bId===id)).length;
+}
+
+/* ---------- avatar / photo ---------- */
+function initials(name){
+  const n=String(name||'').replace(/^\s*(rtn|rtn\.|dr|dr\.|mr|mr\.|mrs|mrs\.|ms|ms\.)\s+/i,'').trim();
+  const p=n.split(/\s+/).filter(Boolean);
+  return ((p[0]||'?')[0]+(p[1]?p[1][0]:'')).toUpperCase();
+}
+function avatar(m,size){
+  const s=size||42;
+  if(m&&m.photo)return `<img src="${m.photo}" alt="" style="width:${s}px;height:${s}px;border-radius:50%;object-fit:cover;border:2px solid var(--gold);flex:0 0 auto">`;
+  return `<div style="width:${s}px;height:${s}px;border-radius:50%;background:var(--blue);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:${Math.max(10,Math.round(s*0.36))}px;border:2px solid var(--gold);flex:0 0 auto">${esc(initials(m?m.name:''))}</div>`;
+}
+// reads an image file, centre-crops to a square and returns a compact JPEG data URL
+function readPhoto(file,cb,err){
+  if(!file)return;
+  if(!/^image\//.test(file.type))return err&&err('Please choose an image file (JPG or PNG).');
+  if(file.size>6*1024*1024)return err&&err('Image is too large. Please pick a file under 6 MB.');
+  const fr=new FileReader();
+  fr.onload=()=>{
+    const img=new Image();
+    img.onload=()=>{
+      const S=260,c=document.createElement('canvas');c.width=S;c.height=S;
+      const side=Math.min(img.width,img.height);
+      c.getContext('2d').drawImage(img,(img.width-side)/2,(img.height-side)/2,side,side,0,0,S,S);
+      cb(c.toDataURL('image/jpeg',0.82));
+    };
+    img.onerror=()=>err&&err('That image could not be read.');
+    img.src=fr.result;
+  };
+  fr.onerror=()=>err&&err('That file could not be read.');
+  fr.readAsDataURL(file);
+}
+function tag(st){
+  if(st==='converted')return '<span class="tag conv">Business Converted</span>';
+  if(st==='not_converted')return '<span class="tag no">Not Converted</span>';
+  return '<span class="tag pend">Awaiting Reply</span>';
+}
+
+/* =========================================================
+   AUTH SCREEN
+   ========================================================= */
+function fillSelect(el,arr,ph){el.innerHTML='<option value="">'+ph+'</option>'+arr.map(v=>'<option value="'+esc(v)+'">'+esc(v)+'</option>').join('');}
+function note(el,type,txt){document.getElementById(el).innerHTML='<div class="msg '+type+'">'+txt+'</div>';}
+function clearNote(el){document.getElementById(el).innerHTML='';}
+
+function showTab(w){
+  document.getElementById('tabMember').classList.toggle('on',w==='member');
+  document.getElementById('tabAdmin').classList.toggle('on',w==='admin');
+  document.getElementById('paneMember').classList.toggle('hide',w!=='member');
+  document.getElementById('paneAdmin').classList.toggle('hide',w!=='admin');
+}
+function showRegister(){document.getElementById('loginBox').classList.add('hide');document.getElementById('registerBox').classList.remove('hide');window.scrollTo(0,0);}
+function showLogin(){document.getElementById('registerBox').classList.add('hide');document.getElementById('loginBox').classList.remove('hide');refreshLoginList();window.scrollTo(0,0);}
+
+function refreshLoginList(){
+  const sel=document.getElementById('loginMemberSel'), list=approved();
+  sel.innerHTML = list.length
+    ? '<option value="">-- Select your name --</option>'+list.map(m=>'<option value="'+m.id+'">'+esc(m.name)+' — '+esc(m.company)+'</option>').join('')
+    : '<option value="">No approved members yet</option>';
+}
+
+let REG_PHOTO='';
+function paintRegPhoto(){
+  document.getElementById('regPhotoBox').innerHTML = REG_PHOTO
+    ? `<img src="${REG_PHOTO}" alt="" style="width:74px;height:74px;border-radius:50%;object-fit:cover;border:3px solid var(--gold)">`
+    : `<div style="width:74px;height:74px;border-radius:50%;background:var(--gold-lt);border:2px dashed var(--gold-mid);display:flex;align-items:center;justify-content:center;color:#8A6100;font-size:11px;font-weight:700;text-align:center">No<br>photo</div>`;
+}
+function pickRegPhoto(inp){
+  readPhoto(inp.files[0],d=>{REG_PHOTO=d;paintRegPhoto();},m=>note('regMsg','err',m));
+  inp.value='';
+}
+
+function submitRegistration(){
+  const g=id=>document.getElementById(id).value.trim();
+  const d={name:g('rName'),phone:g('rPhone'),email:g('rEmail'),company:g('rCompany'),
+    vertical:g('rVertical'),blood:g('rBlood'),dob:g('rDob'),marriage:g('rMarriage'),
+    addr:g('rAddr'),p1:g('rPass'),p2:g('rPass2')};
+  const miss=[];
+  if(!d.name)miss.push('Full Name'); if(!d.phone)miss.push('Mobile Number');
+  if(!d.email)miss.push('Email ID'); if(!d.company)miss.push('Company Name');
+  if(!d.vertical)miss.push('Business Vertical'); if(!d.dob)miss.push('Date of Birth');
+  if(!d.addr)miss.push('Address'); if(!d.p1)miss.push('Password');
+  if(miss.length){return note('regMsg','err','Please fill the required field(s): '+miss.join(', '));}
+  if(!/^[0-9+\-\s()]{10,15}$/.test(d.phone))return note('regMsg','err','Enter a valid mobile number (10–15 digits).');
+  if(!/^[^@\s]+@[^@\s]+\.[^@\s]{2,}$/.test(d.email))return note('regMsg','err','Enter a valid email address.');
+  const dob=toISO(d.dob),mar=toISO(d.marriage);
+  if(dob===null)return note('regMsg','err','Enter the Date of Birth as <b>dd/mm/yyyy</b> — for example 14/08/1982.');
+  if(dob>today())return note('regMsg','err','Date of Birth cannot be in the future.');
+  if(mar===null)return note('regMsg','err','Enter the Marriage Date as <b>dd/mm/yyyy</b>, or leave it blank.');
+  if(mar&&mar>today())return note('regMsg','err','Marriage Date cannot be in the future.');
+  if(mar&&mar<dob)return note('regMsg','err','Marriage Date cannot be earlier than the Date of Birth.');
+  d.dob=dob;d.marriage=mar;
+  if(d.p1.length<6)return note('regMsg','err','Password must be at least 6 characters.');
+  if(d.p1!==d.p2)return note('regMsg','err','Password and Confirm Password do not match.');
+  if(DB.members.some(m=>m.email.toLowerCase()===d.email.toLowerCase()))return note('regMsg','err','This email is already registered.');
+  if(DB.members.some(m=>m.phone===d.phone))return note('regMsg','err','This mobile number is already registered.');
+
+  DB.members.push({id:mid(),name:d.name,phone:d.phone,email:d.email,company:d.company,
+    vertical:d.vertical,blood:d.blood||'Not known',dob:d.dob,marriage:d.marriage||'',
+    addr:d.addr,photo:REG_PHOTO||'',pass:hash(d.p1),status:'pending',appliedAt:stamp(),approvedAt:''});
+  save();
+  ['rName','rPhone','rEmail','rCompany','rDob','rMarriage','rAddr','rPass','rPass2'].forEach(i=>document.getElementById(i).value='');
+  document.getElementById('rVertical').value='';document.getElementById('rBlood').value='';
+  REG_PHOTO='';paintRegPhoto();
+  note('regMsg','ok','Registration saved successfully. Your application is now <b>pending admin approval</b> — you will be able to log in once approved.');
+  window.scrollTo(0,0);
+}
+
+function memberLogin(){
+  clearNote('mLoginMsg');
+  const id=document.getElementById('loginMemberSel').value, p=document.getElementById('loginMemberPass').value;
+  if(!id)return note('mLoginMsg','err','Please select your name from the list.');
+  if(!p)return note('mLoginMsg','err','Please enter your password.');
+  const m=member(id);
+  if(!m)return note('mLoginMsg','err','Member not found.');
+  if(m.status!=='approved')return note('mLoginMsg','err','Your account is not approved yet. Please contact the admin.');
+  if(m.pass!==hash(p))return note('mLoginMsg','err','Incorrect password. Please try again.');
+  SESSION={role:'member',id:m.id,name:m.name};
+  document.getElementById('loginMemberPass').value='';
+  enterApp();
+}
+function adminLogin(){
+  clearNote('aLoginMsg');
+  const u=document.getElementById('loginAdminUser').value.trim(), p=document.getElementById('loginAdminPass').value;
+  if(!u||!p)return note('aLoginMsg','err','Enter both username and password.');
+  if(u!==DB.admin.user||DB.admin.pass!==hash(p))return note('aLoginMsg','err','Invalid admin credentials.');
+  SESSION={role:'admin',id:'admin',name:'Administrator'};
+  document.getElementById('loginAdminPass').value='';
+  enterApp();
+}
+function logout(){
+  if(!confirm('Log out of RMBF Business Forum?'))return;
+  SESSION=null;CUR='dash';
+  document.getElementById('app').classList.add('hide');
+  document.getElementById('nav').classList.add('hide');
+  document.getElementById('whoBox').classList.add('hide');
+  document.getElementById('authScreen').classList.remove('hide');
+  clearNote('mLoginMsg');clearNote('aLoginMsg');clearNote('regMsg');
+  resetLoginFields();showLogin();showTab('member');
+}
+// hides any revealed passwords and puts the admin username back to the default
+function resetLoginFields(){
+  ['loginMemberPass','loginAdminPass','rPass','rPass2'].forEach(id=>{
+    const el=document.getElementById(id);if(!el)return;
+    el.type='password';
+    const b=el.parentNode&&el.parentNode.querySelector?el.parentNode.querySelector('.eye'):null;
+    if(b)b.textContent='Show';
+  });
+  const u=document.getElementById('loginAdminUser');
+  if(u)u.value=(DB&&DB.admin&&DB.admin.user)||'admin';
+}
+
+/* =========================================================
+   APP SHELL
+   ========================================================= */
+const MEMBER_NAV=[['dash','Dashboard'],['refer','Give a Referral'],['inbox','Referrals Received'],
+  ['sent','Referrals Given'],['r2r','R2R Meetings'],['dir','Member Directory'],
+  ['celeb','Birthdays & Anniversaries'],['profile','My Profile']];
+const ADMIN_NAV=[['dash','Dashboard'],['approvals','Pending Approvals'],['members','All Members'],
+  ['allref','All Referrals'],['allr2r','R2R Meetings'],['reports','Reports & Export'],
+  ['verticals','Business Verticals'],['celeb','Birthdays & Anniversaries'],['settings','Settings']];
+
+function enterApp(){
+  document.getElementById('authScreen').classList.add('hide');
+  document.getElementById('app').classList.remove('hide');
+  document.getElementById('nav').classList.remove('hide');
+  document.getElementById('whoBox').classList.remove('hide');
+  document.getElementById('whoName').textContent=SESSION.name;
+  document.getElementById('whoRole').textContent = SESSION.role==='admin'
+      ? 'Administrator' : (member(SESSION.id)?member(SESSION.id).company:'Member');
+  CUR='dash';render();
+}
+function go(p){CUR=p;render();window.scrollTo(0,0);}
+function render(){
+  buildNav();
+  document.getElementById('app').innerHTML=view();
+  const av=document.getElementById('whoAv');
+  if(av)av.innerHTML = SESSION.role==='admin'
+    ? '<div style="width:38px;height:38px;border-radius:50%;background:var(--gold);color:#3A2A00;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;border:2px solid var(--blue)">AD</div>'
+    : avatar(member(SESSION.id),38);
+}
+function buildNav(){
+  const items = SESSION.role==='admin'?ADMIN_NAV:MEMBER_NAV;
+  const nav=document.getElementById('nav');
+  nav.innerHTML=items.map(([k,l])=>{
+    let pill='';
+    if(SESSION.role==='admin'&&k==='approvals'){const n=DB.members.filter(m=>m.status==='pending').length;if(n)pill='<span class="pill">'+n+'</span>';}
+    if(SESSION.role==='member'&&k==='inbox'){const n=DB.referrals.filter(r=>r.toId===SESSION.id&&r.status==='pending').length;if(n)pill='<span class="pill">'+n+'</span>';}
+    return '<button class="'+(CUR===k?'on':'')+'" onclick="go(\''+k+'\')">'+l+pill+'</button>';
+  }).join('');
+}
+function view(){
+  if(SESSION.role==='admin'){
+    switch(CUR){case 'approvals':return vApprovals();case 'members':return vAllMembers();
+      case 'allref':return vAllReferrals();case 'allr2r':return vAdminR2R();
+      case 'reports':return vReports();case 'verticals':return vVerticals();
+      case 'celeb':return vCeleb();case 'settings':return vSettings();default:return vAdminDash();}
+  }
+  switch(CUR){case 'refer':return vRefer();case 'inbox':return vInbox();case 'sent':return vSent();
+    case 'r2r':return vR2R();case 'dir':return vDirectory();case 'celeb':return vCeleb();
+    case 'profile':return vProfile();default:return vMemberDash();}
+}
+
+/* =========================================================
+   MEMBER — DASHBOARD
+   ========================================================= */
+function vMemberDash(){
+  const s=stats(SESSION.id), me=member(SESSION.id);
+  const recent=DB.referrals.filter(r=>r.fromId===SESSION.id||r.toId===SESSION.id)
+    .sort((a,b)=>b.createdAt.localeCompare(a.createdAt)).slice(0,8);
+  return `
+  <div class="page-head">
+    <div style="display:flex;align-items:center;gap:14px">
+      ${avatar(me,58)}
+      <div><h2>Welcome, ${esc(me.name)}</h2>
+      <p>${esc(me.company)} &nbsp;•&nbsp; ${esc(me.vertical)} &nbsp;•&nbsp; Member ID ${esc(me.id)}</p></div>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button class="btn ghost" onclick="go('r2r')">+ Log R2R Meeting</button>
+      <button class="btn gold" onclick="go('refer')">+ Give a Referral</button>
+    </div>
+  </div>
+  <div class="stats">
+    <div class="stat b"><div class="lbl">Referrals Given</div><div class="val">${s.given}</div><div class="sub">${s.convGiven} converted • ${s.pendingGiven} awaiting reply</div></div>
+    <div class="stat"><div class="lbl">Referrals Received</div><div class="val">${s.recd}</div><div class="sub">${s.pendingRecd} need your reply</div></div>
+    <div class="stat g"><div class="lbl">Business Given Value</div><div class="val" style="color:var(--green)">${inr(s.businessGiven)}</div><div class="sub">Converted from referrals you gave</div></div>
+    <div class="stat g"><div class="lbl">Business Taken Value</div><div class="val" style="color:var(--green)">${inr(s.businessTaken)}</div><div class="sub">Converted from referrals you received</div></div>
+    <div class="stat b"><div class="lbl">R2R Meetings</div><div class="val">${s.r2r}</div><div class="sub">${r2rCount('month',SESSION.id)} this month • ${r2rCount('year',SESSION.id)} this year</div></div>
+  </div>
+  ${s.pendingRecd?`<div class="msg info">You have <b>${s.pendingRecd}</b> referral(s) awaiting your reply. <a href="#" onclick="go('inbox');return false"><b>Open Referrals Received →</b></a></div>`:''}
+  <div class="card"><h3>Recent Referral Activity</h3>
+    <div class="tbl-wrap">${recent.length?`<table>
+      <thead><tr><th>Ref ID</th><th>Direction</th><th>Counterparty</th><th>Description</th><th>Status</th><th>Value</th><th>Date</th></tr></thead>
+      <tbody>${recent.map(r=>{const out=r.fromId===SESSION.id;return `<tr>
+        <td><b>${esc(r.id)}</b></td>
+        <td>${out?'<span class="tag blue">Given ↗</span>':'<span class="tag pend">Received ↘</span>'}</td>
+        <td>${esc(out?mname(r.toId):mname(r.fromId))}</td>
+        <td>${esc(r.desc.length>70?r.desc.slice(0,70)+'…':r.desc)}</td>
+        <td>${tag(r.status)}</td>
+        <td class="money">${r.status==='converted'?inr(r.value):'—'}</td>
+        <td>${dmy(r.createdAt)}</td></tr>`;}).join('')}</tbody></table>`
+      :'<div class="empty">No referral activity yet. Start by giving a referral to a fellow member.</div>'}</div>
+  </div>`;
+}
+
+/* =========================================================
+   MEMBER — GIVE A REFERRAL
+   ========================================================= */
+function vRefer(){
+  const others=approved().filter(m=>m.id!==SESSION.id);
+  return `
+  <div class="page-head"><div><h2>Give a Referral</h2>
+    <p>Pass a business lead to a fellow RMBF member. Your referral count increases as soon as you submit.</p></div></div>
+  <div class="card" style="max-width:760px"><h3>Referral Details</h3>
+    <div class="card-body">
+      <div id="refMsg"></div>
+      ${others.length?`
+      <div class="grid" style="gap:15px">
+        <div class="field"><label>Refer To — Member <span class="req">*</span></label>
+          <select id="refTo"><option value="">-- Select member --</option>
+          ${others.map(m=>`<option value="${m.id}">${esc(m.name)} — ${esc(m.company)} (${esc(m.vertical)})</option>`).join('')}</select>
+        </div>
+        <div class="g2 grid">
+          <div class="field"><label>Client / Prospect Name</label><input id="refClient" placeholder="Who is the lead? (optional)"></div>
+          <div class="field"><label>Client Contact</label><input id="refContact" placeholder="Phone or email (optional)"></div>
+        </div>
+        <div class="field"><label>Referral Description <span class="req">*</span></label>
+          <textarea id="refDesc" placeholder="Describe the business opportunity — requirement, quantity, budget, timeline, and any context that helps the member follow up."></textarea>
+        </div>
+        <div class="field"><label>Estimated Business Value (optional)</label><input id="refEst" type="number" min="0" placeholder="e.g. 50000"><div class="hint">Indicative only. The final converted value is entered by the receiving member.</div></div>
+        <div><button class="btn" onclick="submitReferral()">Submit Referral</button></div>
+      </div>`
+      :'<div class="msg info">There are no other approved members yet to refer business to.</div>'}
+    </div>
+  </div>`;
+}
+function submitReferral(){
+  const to=document.getElementById('refTo').value, desc=document.getElementById('refDesc').value.trim();
+  if(!to)return note('refMsg','err','Please select the member you want to refer this business to.');
+  if(!desc)return note('refMsg','err','Please enter a referral description.');
+  if(desc.length<10)return note('refMsg','err','Please give a slightly more detailed description (at least 10 characters).');
+  const r={id:rid(),fromId:SESSION.id,toId:to,desc:desc,
+    client:document.getElementById('refClient').value.trim(),
+    contact:document.getElementById('refContact').value.trim(),
+    estimate:Number(document.getElementById('refEst').value)||0,
+    status:'pending',value:0,replyNote:'',createdAt:today(),repliedAt:''};
+  DB.referrals.push(r);save();
+  const s=stats(SESSION.id);
+  document.getElementById('refTo').value='';document.getElementById('refDesc').value='';
+  document.getElementById('refClient').value='';document.getElementById('refContact').value='';
+  document.getElementById('refEst').value='';
+  buildNav();
+  note('refMsg','ok',`Referral <b>${r.id}</b> sent to <b>${esc(mname(to))}</b>. Your total referrals given is now <b>${s.given}</b>.`);
+  window.scrollTo(0,0);
+}
+
+/* =========================================================
+   MEMBER — INBOX (referrals received)
+   ========================================================= */
+function vInbox(){
+  const rows=DB.referrals.filter(r=>r.toId===SESSION.id).sort((a,b)=>{
+    if(a.status==='pending'&&b.status!=='pending')return -1;
+    if(b.status==='pending'&&a.status!=='pending')return 1;
+    return b.createdAt.localeCompare(a.createdAt);});
+  const pend=rows.filter(r=>r.status==='pending').length;
+  return `
+  <div class="page-head"><div><h2>Referrals Received</h2>
+    <p>Business referred to you by fellow members. Reply to each one — Business Converted or Not Converted.</p></div>
+    ${pend?`<span class="badge-count">${pend} awaiting your reply</span>`:''}</div>
+  <div class="card"><h3>Inbox</h3>
+    <div class="tbl-wrap">${rows.length?`<table>
+      <thead><tr><th>Ref ID</th><th>Date</th><th>Referred By</th><th>Client</th><th>Description</th><th>Status</th><th>Converted Value</th><th>Action</th></tr></thead>
+      <tbody>${rows.map(r=>`<tr>
+        <td><b>${esc(r.id)}</b></td><td>${dmy(r.createdAt)}</td>
+        <td>${esc(mname(r.fromId))}<div class="hint">${esc(member(r.fromId)?member(r.fromId).company:'')}</div></td>
+        <td>${esc(r.client||'—')}</td>
+        <td style="max-width:290px">${esc(r.desc)}${r.replyNote?`<div class="hint"><b>Your reply:</b> ${esc(r.replyNote)}</div>`:''}</td>
+        <td>${tag(r.status)}</td>
+        <td class="money">${r.status==='converted'?inr(r.value):'—'}</td>
+        <td>${r.status==='pending'
+            ?`<button class="btn gold sm" onclick="openReply('${r.id}')">Reply</button>`
+            :`<button class="btn ghost sm" onclick="openReply('${r.id}')">Edit Reply</button>`}</td>
+      </tr>`).join('')}</tbody></table>`
+      :'<div class="empty">No referrals received yet.</div>'}</div>
+  </div>`;
+}
+
+function openReply(id){
+  const r=DB.referrals.find(x=>x.id===id);if(!r)return;
+  document.getElementById('modalHost').innerHTML=`
+  <div class="overlay" onclick="if(event.target===this)closeModal()">
+    <div class="modal">
+      <h3>Reply to Referral ${esc(r.id)}</h3>
+      <div class="modal-body">
+        <div class="kv">
+          <div class="k">Referred by</div><div>${esc(mname(r.fromId))} — ${esc(member(r.fromId)?member(r.fromId).company:'')}</div>
+          <div class="k">Received on</div><div>${dmy(r.createdAt)}</div>
+          <div class="k">Client / Prospect</div><div>${esc(r.client||'—')}</div>
+          <div class="k">Client contact</div><div>${esc(r.contact||'—')}</div>
+          <div class="k">Estimated value</div><div>${r.estimate?inr(r.estimate):'—'}</div>
+        </div>
+        <div class="quote">${esc(r.desc)}</div>
+        <div id="replyMsg"></div>
+        <div class="field" style="margin-bottom:14px"><label>Outcome <span class="req">*</span></label>
+          <select id="rpStatus" onchange="toggleVal()">
+            <option value="">-- Select outcome --</option>
+            <option value="converted"${r.status==='converted'?' selected':''}>Business Converted</option>
+            <option value="not_converted"${r.status==='not_converted'?' selected':''}>Not Converted</option>
+          </select>
+        </div>
+        <div class="field ${r.status==='converted'?'':'hide'}" id="valWrap" style="margin-bottom:14px">
+          <label>Business Value Converted (₹) <span class="req">*</span></label>
+          <input id="rpValue" type="number" min="1" value="${r.value||''}" placeholder="e.g. 125000">
+          <div class="hint">This value is credited as <b>Business Taken</b> to you and <b>Business Given</b> to ${esc(mname(r.fromId))}.</div>
+        </div>
+        <div class="field"><label>Remarks (optional)</label>
+          <textarea id="rpNote" style="min-height:70px" placeholder="Outcome details, reason if not converted, next steps…">${esc(r.replyNote||'')}</textarea></div>
+      </div>
+      <div class="modal-foot">
+        <button class="btn ghost" onclick="closeModal()">Cancel</button>
+        <button class="btn" onclick="saveReply('${r.id}')">Submit Reply</button>
+      </div>
+    </div>
+  </div>`;
+}
+function toggleVal(){
+  const v=document.getElementById('rpStatus').value;
+  document.getElementById('valWrap').classList.toggle('hide',v!=='converted');
+}
+function saveReply(id){
+  const r=DB.referrals.find(x=>x.id===id);if(!r)return;
+  const st=document.getElementById('rpStatus').value;
+  if(!st)return note('replyMsg','err','Please select an outcome.');
+  let val=0;
+  if(st==='converted'){
+    val=Number(document.getElementById('rpValue').value);
+    if(!val||val<=0)return note('replyMsg','err','Enter the converted business value (greater than 0).');
+  }
+  r.status=st;r.value=val;r.replyNote=document.getElementById('rpNote').value.trim();r.repliedAt=today();
+  save();closeModal();render();
+}
+function closeModal(){document.getElementById('modalHost').innerHTML='';}
+
+/* =========================================================
+   MEMBER — SENT
+   ========================================================= */
+function vSent(){
+  const rows=DB.referrals.filter(r=>r.fromId===SESSION.id).sort((a,b)=>b.createdAt.localeCompare(a.createdAt));
+  const s=stats(SESSION.id);
+  return `
+  <div class="page-head"><div><h2>Referrals Given</h2>
+    <p>Business you have referred to fellow members, and how each one turned out.</p></div>
+    <button class="btn gold" onclick="go('refer')">+ Give a Referral</button></div>
+  <div class="stats">
+    <div class="stat b"><div class="lbl">Total Given</div><div class="val">${s.given}</div></div>
+    <div class="stat g"><div class="lbl">Converted</div><div class="val">${s.convGiven}</div></div>
+    <div class="stat"><div class="lbl">Awaiting Reply</div><div class="val">${s.pendingGiven}</div></div>
+    <div class="stat g"><div class="lbl">Business Given Value</div><div class="val" style="color:var(--green)">${inr(s.businessGiven)}</div></div>
+  </div>
+  <div class="card"><h3>Referrals I Gave</h3>
+    <div class="tbl-wrap">${rows.length?`<table>
+      <thead><tr><th>Ref ID</th><th>Date</th><th>Referred To</th><th>Client</th><th>Description</th><th>Status</th><th>Converted Value</th><th>Their Remarks</th></tr></thead>
+      <tbody>${rows.map(r=>`<tr>
+        <td><b>${esc(r.id)}</b></td><td>${dmy(r.createdAt)}</td>
+        <td>${esc(mname(r.toId))}<div class="hint">${esc(member(r.toId)?member(r.toId).company:'')}</div></td>
+        <td>${esc(r.client||'—')}</td>
+        <td style="max-width:260px">${esc(r.desc)}</td>
+        <td>${tag(r.status)}</td>
+        <td class="money">${r.status==='converted'?inr(r.value):'—'}</td>
+        <td>${esc(r.replyNote||'—')}</td></tr>`).join('')}</tbody></table>`
+      :'<div class="empty">You have not given any referrals yet.</div>'}</div>
+  </div>`;
+}
+
+/* =========================================================
+   R2R — ROTARIAN TO ROTARIAN MEETINGS (member side)
+   ========================================================= */
+function vR2R(){
+  const others=approved().filter(m=>m.id!==SESSION.id);
+  const mine=myR2R(SESSION.id).sort((a,b)=>String(b.date).localeCompare(String(a.date)));
+  const c=p=>r2rCount(p,SESSION.id);
+  return `
+  <div class="page-head"><div><h2>R2R Meetings</h2>
+    <p>Rotarian-to-Rotarian meets. Log a one-to-one meeting with a fellow member — it counts for both of you.</p></div></div>
+  <div class="stats">
+    <div class="stat b"><div class="lbl">Total R2R Meetings</div><div class="val">${mine.length}</div><div class="sub">${stats(SESSION.id).r2rLogged} logged by you</div></div>
+    <div class="stat"><div class="lbl">This Week</div><div class="val">${c('week')}</div></div>
+    <div class="stat"><div class="lbl">This Month</div><div class="val">${c('month')}</div></div>
+    <div class="stat g"><div class="lbl">Last 6 Months</div><div class="val">${c('6m')}</div><div class="sub">${c('year')} this year</div></div>
+  </div>
+
+  <div class="card"><h3>Log a New R2R Meeting</h3><div class="card-body">
+    <div id="x2Msg"></div>
+    ${others.length?`
+    <div class="grid" style="gap:15px">
+      <div class="g2 grid">
+        <div class="field"><label>Member You Met <span class="req">*</span></label>
+          <select id="xWith"><option value="">-- Select member --</option>
+          ${others.map(m=>`<option value="${m.id}">${esc(m.name)} — ${esc(m.company)}</option>`).join('')}</select></div>
+        <div class="field"><label>Date of Meeting <span class="req">*</span></label>
+          ${dateField('xDate',today())}<div class="hint">Defaults to today, ${dmy(today())}.</div></div>
+      </div>
+      <div class="field"><label>Meeting Location <span class="req">*</span></label>
+        <input id="xLoc" placeholder="e.g. His factory at SIPCOT Perundurai / Hotel Sri Krishna, Erode"></div>
+      <div class="field"><label>Benefit of the Meet <span class="req">*</span></label>
+        <textarea id="xBen" placeholder="What came out of it — better understanding of his business, a lead identified, a collaboration, a supplier found…"></textarea></div>
+      <div><button class="btn" onclick="submitR2R()">Save R2R Meeting</button></div>
+    </div>`:'<div class="msg info">There are no other approved members yet to log a meeting with.</div>'}
+  </div></div>
+
+  <div class="card"><h3>My R2R Meeting History</h3><div class="tbl-wrap">
+    ${mine.length?`<table><thead><tr><th>R2R ID</th><th>Date</th><th>Met With</th><th>Location</th><th>Benefit of the Meet</th><th>Logged By</th><th></th></tr></thead>
+    <tbody>${mine.map(x=>{const p=member(r2rPartner(x,SESSION.id));return `<tr>
+      <td><b>${esc(x.id)}</b></td><td>${dmy(x.date)}</td>
+      <td><div style="display:flex;align-items:center;gap:9px">${avatar(p,32)}<div><b>${esc(p?p.name:'(removed)')}</b><div class="hint">${esc(p?p.company:'')}</div></div></div></td>
+      <td>${esc(x.location)}</td>
+      <td style="max-width:340px">${esc(x.benefit)}</td>
+      <td>${x.loggedBy===SESSION.id?'<span class="tag blue">You</span>':'<span class="tag pend">'+esc(mname(x.loggedBy))+'</span>'}</td>
+      <td>${x.loggedBy===SESSION.id?`<button class="btn danger sm" onclick="delR2R('${x.id}')">Delete</button>`:''}</td>
+    </tr>`;}).join('')}</tbody></table>`
+    :'<div class="empty">No R2R meetings logged yet. Use the form above after your next one-to-one.</div>'}
+  </div></div>`;
+}
+function submitR2R(){
+  const g=id=>document.getElementById(id).value.trim();
+  const w=g('xWith'),l=g('xLoc'),b=g('xBen');
+  const d=toISO(g('xDate'));
+  if(!w)return note('x2Msg','err','Please select the member you met.');
+  if(d===null)return note('x2Msg','err','Enter the meeting date as <b>dd/mm/yyyy</b> — for example '+dmy(today())+'.');
+  if(!d)return note('x2Msg','err','Please enter the date of the meeting.');
+  if(d>today())return note('x2Msg','err','The meeting date cannot be in the future.');
+  if(!l)return note('x2Msg','err','Please enter the meeting location.');
+  if(!b||b.length<5)return note('x2Msg','err','Please enter the benefit of the meet.');
+  const dupe=DB.r2r.find(x=>x.date===d&&((x.aId===SESSION.id&&x.bId===w)||(x.aId===w&&x.bId===SESSION.id)));
+  if(dupe)return note('x2Msg','err','A meeting with '+esc(mname(w))+' on '+dmy(d)+' is already recorded ('+dupe.id+').');
+  DB.r2r.push({id:xid(),aId:SESSION.id,bId:w,date:d,location:l,benefit:b,loggedBy:SESSION.id,createdAt:today()});
+  save();
+  const n=myR2R(SESSION.id).length;
+  render();
+  setTimeout(()=>note('x2Msg','ok','R2R meeting with <b>'+esc(mname(w))+'</b> saved. It is now counted for both members — your total is <b>'+n+'</b>.'),30);
+}
+function delR2R(id){
+  const x=DB.r2r.find(y=>y.id===id);if(!x)return;
+  if(SESSION.role!=='admin'&&x.loggedBy!==SESSION.id)return;
+  if(!confirm('Delete R2R meeting '+id+'? It will be removed from both members\' counts.'))return;
+  DB.r2r=DB.r2r.filter(y=>y.id!==id);save();render();
+}
+
+/* ---------- R2R: admin view ---------- */
+let x2Q={t:'',p:'all'};
+function x2Set(){x2Q={t:document.getElementById('xqT').value.toLowerCase(),p:document.getElementById('xqP').value};
+  document.getElementById('x2Body').innerHTML=x2Rows();}
+function x2Rows(){
+  const list=DB.r2r.filter(x=>{
+    const hay=(x.id+' '+mname(x.aId)+' '+mname(x.bId)+' '+x.location+' '+x.benefit).toLowerCase();
+    return (!x2Q.t||hay.includes(x2Q.t))&&inPeriod(x.date,x2Q.p);})
+    .sort((a,b)=>String(b.date).localeCompare(String(a.date)));
+  if(!list.length)return '<div class="empty">No R2R meetings match this filter.</div>';
+  return `<table><thead><tr><th>R2R ID</th><th>Date</th><th>Member A</th><th>Member B</th><th>Location</th><th>Benefit of the Meet</th><th>Logged By</th><th></th></tr></thead>
+  <tbody>${list.map(x=>`<tr>
+    <td><b>${esc(x.id)}</b></td><td>${dmy(x.date)}</td>
+    <td>${esc(mname(x.aId))}<div class="hint">${esc(member(x.aId)?member(x.aId).company:'')}</div></td>
+    <td>${esc(mname(x.bId))}<div class="hint">${esc(member(x.bId)?member(x.bId).company:'')}</div></td>
+    <td>${esc(x.location)}</td>
+    <td style="max-width:340px">${esc(x.benefit)}</td>
+    <td>${esc(mname(x.loggedBy))}</td>
+    <td><button class="btn danger sm" onclick="delR2R('${x.id}')">Delete</button></td></tr>`).join('')}</tbody></table>`;
+}
+function vAdminR2R(){
+  const c=p=>r2rCount(p);
+  const per=[['week','This Week'],['month','This Month'],['6m','Last 6 Months'],['year','This Year'],['all','All Time']];
+  const byMember=approved().map(m=>({m,
+    all:myR2R(m.id).length,
+    w:r2rCount('week',m.id),mo:r2rCount('month',m.id),s6:r2rCount('6m',m.id),y:r2rCount('year',m.id)}))
+    .sort((a,b)=>b.all-a.all);
+  return `
+  <div class="page-head"><div><h2>R2R Meetings</h2>
+    <p>Every Rotarian-to-Rotarian meet logged in the forum. Each meeting counts for both members.</p></div>
+    <button class="btn ghost" onclick="exportR2R()">⭳ Export R2R CSV</button></div>
+  <div class="stats">
+    <div class="stat"><div class="lbl">This Week</div><div class="val">${c('week')}</div><div class="sub">from ${dmy(periodStart('week').toISOString().slice(0,10))}</div></div>
+    <div class="stat b"><div class="lbl">This Month</div><div class="val">${c('month')}</div><div class="sub">${MON[new Date().getMonth()]} ${new Date().getFullYear()}</div></div>
+    <div class="stat g"><div class="lbl">Last 6 Months</div><div class="val">${c('6m')}</div></div>
+    <div class="stat b"><div class="lbl">This Year</div><div class="val">${c('year')}</div><div class="sub">${DB.r2r.length} all time</div></div>
+  </div>
+
+  <div class="card"><h3>Member-wise R2R Count</h3><div class="tbl-wrap">
+    ${byMember.length?`<table><thead><tr><th>Member</th><th>Company</th><th>This Week</th><th>This Month</th><th>Last 6 Months</th><th>This Year</th><th>All Time</th></tr></thead>
+    <tbody>${byMember.map(r=>`<tr><td><b>${esc(r.m.name)}</b></td><td>${esc(r.m.company)}</td>
+      <td>${r.w}</td><td>${r.mo}</td><td>${r.s6}</td><td>${r.y}</td><td><b>${r.all}</b></td></tr>`).join('')}
+      <tr style="background:var(--gold-lt);font-weight:800"><td colspan="2">TOTAL MEETINGS</td>
+      <td>${c('week')}</td><td>${c('month')}</td><td>${c('6m')}</td><td>${c('year')}</td><td>${DB.r2r.length}</td></tr>
+      </tbody></table><div class="hint" style="padding:10px 12px">Each meeting appears once against both participating members, so the member column totals are double the meeting totals shown in the last row.</div>`
+    :'<div class="empty">No approved members yet.</div>'}</div></div>
+
+  <div class="card"><h3>All R2R Meeting Records</h3><div class="card-body">
+    <div class="toolbar">
+      <div style="flex:2"><label>Search</label><input id="xqT" placeholder="Member, location, benefit…" oninput="x2Set()" value="${esc(x2Q.t)}"></div>
+      <div><label>Period</label><select id="xqP" onchange="x2Set()">
+        ${per.map(([v,l])=>`<option value="${v}"${x2Q.p===v?' selected':''}>${l}</option>`).join('')}</select></div>
+      <div style="min-width:auto"><button class="btn ghost" onclick="x2Q={t:'',p:'all'};render()">Reset</button></div>
+    </div>
+    <div class="tbl-wrap" id="x2Body">${x2Rows()}</div>
+  </div></div>`;
+}
+function exportR2R(){
+  const rows=[['R2R ID','Date','Member A','A Company','Member B','B Company','Location','Benefit of the Meet','Logged By','Entered On']];
+  DB.r2r.slice().sort((a,b)=>String(a.date).localeCompare(String(b.date))).forEach(x=>{
+    const a=member(x.aId),b=member(x.bId);
+    rows.push([x.id,dmy(x.date),mname(x.aId),a?a.company:'',mname(x.bId),b?b.company:'',
+      x.location,x.benefit,mname(x.loggedBy),dmy(x.createdAt)]);});
+  rows.push([]);
+  rows.push(['Totals','This Week',r2rCount('week'),'This Month',r2rCount('month'),
+    'Last 6 Months',r2rCount('6m'),'This Year',r2rCount('year'),'All Time',DB.r2r.length]);
+  download('RMBF-R2R-Meetings-{d}.csv',rows);
+}
+
+/* =========================================================
+   ADMIN — BUSINESS VERTICALS (add / edit / delete)
+   ========================================================= */
+function vertUse(v){return DB.members.filter(m=>m.vertical===v).length;}
+function vVerticals(){
+  const list=verts();
+  return `
+  <div class="page-head"><div><h2>Business Verticals</h2>
+    <p>${list.length} verticals. These populate the dropdown on the registration form, member profiles and reports.</p></div></div>
+  <div class="grid g2">
+    <div class="card"><h3>Add a New Vertical</h3><div class="card-body">
+      <div id="vtMsg"></div>
+      <div class="field" style="margin-bottom:13px"><label>Vertical Name <span class="req">*</span></label>
+        <input id="vtNew" placeholder="e.g. Cold Storage & Warehousing" onkeydown="if(event.key==='Enter')addVert()"></div>
+      <button class="btn" onclick="addVert()">Add Vertical</button>
+      <hr style="border:none;border-top:1px solid var(--line);margin:16px 0">
+      <div style="font-size:13.3px;line-height:1.7">
+        <b>Rename</b> updates every member already in that vertical, automatically.<br>
+        <b>Delete</b> is only allowed when no member is using the vertical — reassign those members first.
+      </div>
+      <hr style="border:none;border-top:1px solid var(--line);margin:16px 0">
+      <button class="btn ghost sm" onclick="restoreVerts()">Restore Default List</button>
+    </div></div>
+    <div class="card"><h3>Vertical List</h3><div class="tbl-wrap">
+      <table><thead><tr><th>Vertical</th><th>Members</th><th>Referrals</th><th>Action</th></tr></thead>
+      <tbody>${list.map(v=>{
+        const ms=DB.members.filter(m=>m.vertical===v),ids=ms.map(m=>m.id);
+        const rf=DB.referrals.filter(r=>ids.indexOf(r.fromId)>=0||ids.indexOf(r.toId)>=0).length;
+        return `<tr><td><b>${esc(v)}</b></td>
+          <td>${ms.length?'<span class="tag blue">'+ms.length+'</span>':'<span class="hint">0</span>'}</td>
+          <td>${rf}</td>
+          <td style="white-space:nowrap">
+            <button class="btn ghost sm" onclick="renameVert('${esc(v).replace(/'/g,"\\'")}')">Rename</button>
+            <button class="btn danger sm" onclick="delVert('${esc(v).replace(/'/g,"\\'")}')"${ms.length?' title="In use — reassign members first"':''}>Delete</button>
+          </td></tr>`;}).join('')}</tbody></table>
+    </div></div>
+  </div>`;
+}
+function addVert(){
+  const v=document.getElementById('vtNew').value.trim();
+  if(!v)return note('vtMsg','err','Enter a vertical name.');
+  if(v.length<3)return note('vtMsg','err','Vertical name is too short.');
+  if(DB.verticals.some(x=>x.toLowerCase()===v.toLowerCase()))return note('vtMsg','err','“'+esc(v)+'” already exists in the list.');
+  DB.verticals.push(v);save();refreshVerticalPickers();render();
+  setTimeout(()=>note('vtMsg','ok','Vertical “'+esc(v)+'” added.'),30);
+}
+function renameVert(old){
+  const v=prompt('Rename business vertical:\n\nEvery member currently in this vertical will be updated.',old);
+  if(v===null)return;
+  const nv=v.trim();
+  if(!nv)return alert('Vertical name cannot be blank.');
+  if(nv===old)return;
+  if(DB.verticals.some(x=>x.toLowerCase()===nv.toLowerCase()))return alert('“'+nv+'” already exists in the list.');
+  DB.verticals=DB.verticals.map(x=>x===old?nv:x);
+  let n=0;DB.members.forEach(m=>{if(m.vertical===old){m.vertical=nv;n++;}});
+  save();refreshVerticalPickers();render();
+  setTimeout(()=>note('vtMsg','ok','Renamed to “'+esc(nv)+'”'+(n?' and updated '+n+' member record'+(n===1?'':'s')+'.':'.')),30);
+}
+function delVert(v){
+  const n=vertUse(v);
+  if(n)return alert('“'+v+'” cannot be deleted — '+n+' member'+(n===1?' is':'s are')+' using it.\n\nOpen All Members, change their vertical, then delete this one.');
+  if(DB.verticals.length<=1)return alert('At least one vertical must remain in the list.');
+  if(!confirm('Delete the vertical “'+v+'”?'))return;
+  DB.verticals=DB.verticals.filter(x=>x!==v);save();refreshVerticalPickers();render();
+}
+function restoreVerts(){
+  if(!confirm('Add any missing default verticals back to the list?\n\nNothing already in the list is removed or changed.'))return;
+  let n=0;DEFAULT_VERTICALS.forEach(v=>{if(!DB.verticals.some(x=>x.toLowerCase()===v.toLowerCase())){DB.verticals.push(v);n++;}});
+  save();refreshVerticalPickers();render();
+  setTimeout(()=>note('vtMsg','ok',n?n+' default vertical(s) restored.':'Nothing to restore — all defaults are already present.'),30);
+}
+function refreshVerticalPickers(){
+  const el=document.getElementById('rVertical');
+  if(el){const keep=el.value;fillSelect(el,verts(),'-- Select vertical --');el.value=keep;}
+}
+
+/* =========================================================
+   DIRECTORY
+   ========================================================= */
+let dirQ={t:'',v:'',b:''};
+function dirSet(){dirQ={t:document.getElementById('dqT').value.toLowerCase(),v:document.getElementById('dqV').value,b:document.getElementById('dqB').value};
+  document.getElementById('dirBody').innerHTML=dirRows();}
+function dirRows(){
+  let list=approved().filter(m=>{
+    const hay=(m.name+' '+m.company+' '+m.vertical+' '+m.phone+' '+m.email+' '+m.addr).toLowerCase();
+    return (!dirQ.t||hay.includes(dirQ.t))&&(!dirQ.v||m.vertical===dirQ.v)&&(!dirQ.b||m.blood===dirQ.b);});
+  if(!list.length)return '<div class="empty">No members match your search.</div>';
+  return `<table><thead><tr><th>ID</th><th>Member</th><th>Company</th><th>Vertical</th><th>Mobile</th><th>Email</th><th>Blood</th><th>Referrals</th><th>R2R</th></tr></thead>
+  <tbody>${list.map(m=>{const s=stats(m.id);return `<tr>
+    <td><b>${esc(m.id)}</b></td>
+    <td><div style="display:flex;align-items:center;gap:9px">${avatar(m,34)}<b>${esc(m.name)}</b></div></td>
+    <td>${esc(m.company)}</td>
+    <td><span class="tag blue">${esc(m.vertical)}</span></td>
+    <td>${esc(m.phone)}</td><td>${esc(m.email)}</td><td>${esc(m.blood)}</td>
+    <td>${s.given} given / ${s.recd} recd</td><td>${s.r2r}</td></tr>`;}).join('')}</tbody></table>`;
+}
+function vDirectory(){
+  const vs=verts().filter(v=>approved().some(m=>m.vertical===v));
+  const bs=[...new Set(approved().map(m=>m.blood))].sort();
+  return `
+  <div class="page-head"><div><h2>Member Directory</h2><p>${approved().length} approved members. Search by name, company, vertical, phone or area.</p></div></div>
+  <div class="card"><h3>Search Members</h3><div class="card-body">
+    <div class="toolbar">
+      <div style="flex:2"><label>Search</label><input id="dqT" placeholder="Name, company, phone, area…" oninput="dirSet()" value="${esc(dirQ.t)}"></div>
+      <div><label>Vertical</label><select id="dqV" onchange="dirSet()"><option value="">All verticals</option>${vs.map(v=>`<option${dirQ.v===v?' selected':''}>${esc(v)}</option>`).join('')}</select></div>
+      <div><label>Blood Group</label><select id="dqB" onchange="dirSet()"><option value="">All</option>${bs.map(b=>`<option${dirQ.b===b?' selected':''}>${esc(b)}</option>`).join('')}</select></div>
+      <div style="min-width:auto"><button class="btn ghost" onclick="dirQ={t:'',v:'',b:''};render()">Reset</button></div>
+    </div>
+    <div class="tbl-wrap" id="dirBody">${dirRows()}</div>
+  </div></div>`;
+}
+
+/* =========================================================
+   BIRTHDAYS & ANNIVERSARIES
+   ========================================================= */
+function nextOcc(md){
+  if(!md)return null;
+  const p=String(md).slice(0,10).split('-');if(p.length!==3)return null;
+  const now=new Date();now.setHours(0,0,0,0);
+  let d=new Date(now.getFullYear(),Number(p[1])-1,Number(p[2]));
+  if(d<now)d=new Date(now.getFullYear()+1,Number(p[1])-1,Number(p[2]));
+  return {date:d,days:Math.round((d-now)/86400000)};
+}
+const MON=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+let CELEB_WIN=90;   // days window; 0 = show the whole year
+
+function celebList(field){
+  return approved().map(m=>{const n=nextOcc(m[field]);return n?{m,n}:null;})
+    .filter(Boolean).sort((a,b)=>a.n.days-b.n.days);
+}
+function celebRow(m,n,field){
+  const yr=Number(String(field==='dob'?m.dob:m.marriage).slice(0,4));
+  let extra='';
+  if(yr>1900){const num=n.date.getFullYear()-yr;
+    extra = field==='dob' ? 'Turning '+num : num+(num===1?' year':' years')+' together';}
+  const when = n.days===0 ? '<b style="color:#8A6100">Today 🎉</b>'
+             : n.days===1 ? '<b>Tomorrow</b>'
+             : 'in '+n.days+' days';
+  return `<div class="celeb ${n.days===0?'today':''}">
+    <div class="d"><span>${n.date.getDate()}</span><small>${MON[n.date.getMonth()]}</small></div>
+    ${avatar(m,40)}
+    <div style="flex:1;min-width:120px"><b>${esc(m.name)}</b>
+      <div class="hint">${esc(m.company)} &nbsp;•&nbsp; ${esc(m.phone)}</div>
+      <div class="hint">${extra?extra+' &nbsp;•&nbsp; ':''}${when} &nbsp;•&nbsp; ${dmy(field==='dob'?m.dob:m.marriage)}</div>
+    </div>
+    <a class="btn ghost sm" href="tel:${esc(String(m.phone).replace(/[^0-9+]/g,''))}">Call</a>
+  </div>`;
+}
+function celebBlock(field,label){
+  const all=celebList(field);
+  if(!all.length)return `<div class="empty">No ${label} recorded yet.<br><span class="hint">Members need an approved account with this date filled in.</span></div>`;
+  const win = CELEB_WIN ? all.filter(x=>x.n.days<=CELEB_WIN) : all;
+  if(!win.length){
+    return `<div class="msg info">No ${label} in the next ${CELEB_WIN} days. Showing the next few instead.</div>`
+      + all.slice(0,5).map(x=>celebRow(x.m,x.n,field)).join('');
+  }
+  return win.map(x=>celebRow(x.m,x.n,field)).join('');
+}
+function setCelebWin(v){CELEB_WIN=Number(v);render();}
+
+function vCeleb(){
+  const b=celebList('dob'),a=celebList('marriage'),ap=approved().length;
+  const thisMonth=x=>x.n.date.getMonth()===new Date().getMonth()&&x.n.days<=45;
+  const opts=[[30,'Next 30 days'],[60,'Next 60 days'],[90,'Next 90 days'],[180,'Next 6 months'],[0,'Full year']];
+  return `
+  <div class="page-head">
+    <div><h2>Birthdays &amp; Anniversaries</h2>
+      <p>${ap} approved member${ap===1?'':'s'} • ${b.length} with a date of birth • ${a.length} with a marriage date</p></div>
+    <div style="min-width:180px"><label>Show</label>
+      <select onchange="setCelebWin(this.value)">
+        ${opts.map(([v,l])=>`<option value="${v}"${CELEB_WIN===v?' selected':''}>${l}</option>`).join('')}
+      </select></div>
+  </div>
+  ${!ap?'<div class="msg info">No approved members yet, so there is nothing to show here. Once the admin approves members, their birthdays and anniversaries appear automatically.</div>':''}
+  <div class="stats">
+    <div class="stat"><div class="lbl">Birthdays This Month</div><div class="val">${b.filter(thisMonth).length}</div></div>
+    <div class="stat"><div class="lbl">Anniversaries This Month</div><div class="val">${a.filter(thisMonth).length}</div></div>
+    <div class="stat g"><div class="lbl">Celebrating Today</div><div class="val">${b.filter(x=>x.n.days===0).length+a.filter(x=>x.n.days===0).length}</div></div>
+    <div class="stat b"><div class="lbl">Next Celebration</div><div class="val" style="font-size:18px">${(()=>{const all=[...b,...a].sort((p,q)=>p.n.days-q.n.days);return all.length?esc(all[0].m.name.split(' ').slice(-1)[0])+' — '+all[0].n.date.getDate()+' '+MON[all[0].n.date.getMonth()]:'—';})()}</div></div>
+  </div>
+  <div class="grid g2">
+    <div class="card"><h3>🎂 Upcoming Birthdays</h3><div class="card-body">${celebBlock('dob','birthdays')}</div></div>
+    <div class="card"><h3>💍 Upcoming Wedding Anniversaries</h3><div class="card-body">${celebBlock('marriage','anniversaries')}</div></div>
+  </div>`;
+}
+
+/* =========================================================
+   MEMBER — PROFILE
+   ========================================================= */
+function vProfile(){
+  const m=member(SESSION.id),s=stats(SESSION.id);
+  return `
+  <div class="page-head"><div style="display:flex;align-items:center;gap:14px">${avatar(m,58)}
+    <div><h2>My Profile</h2><p>Member ID ${esc(m.id)} • Approved on ${dmy(m.approvedAt)}</p></div></div></div>
+  <div class="grid g2">
+    <div class="card"><h3>My Details</h3><div class="card-body">
+      <div id="profMsg"></div>
+      <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;padding-bottom:16px;margin-bottom:16px;border-bottom:1px solid var(--line)">
+        ${avatar(m,86)}
+        <div>
+          <label>Profile Photo</label>
+          <input type="file" id="pPhotoFile" accept="image/*" class="hide" onchange="pickProfilePhoto(this)">
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <button class="btn ghost sm" onclick="document.getElementById('pPhotoFile').click()">${m.photo?'Change Photo':'Upload Photo'}</button>
+            ${m.photo?'<button class="btn ghost sm" onclick="removeProfilePhoto()">Remove</button>':''}
+          </div>
+          <div class="hint">JPG or PNG, cropped to a square automatically.</div>
+        </div>
+      </div>
+      <div class="grid" style="gap:13px">
+        <div class="field"><label>Full Name</label><input id="pName" value="${esc(m.name)}"></div>
+        <div class="g2 grid">
+          <div class="field"><label>Mobile</label><input id="pPhone" value="${esc(m.phone)}"></div>
+          <div class="field"><label>Email</label><input id="pEmail" value="${esc(m.email)}"></div>
+        </div>
+        <div class="g2 grid">
+          <div class="field"><label>Company</label><input id="pCompany" value="${esc(m.company)}"></div>
+          <div class="field"><label>Vertical</label><select id="pVertical">${verts().map(v=>`<option${m.vertical===v?' selected':''}>${esc(v)}</option>`).join('')}</select></div>
+        </div>
+        <div class="g3 grid">
+          <div class="field"><label>Blood Group</label><select id="pBlood">${BLOOD.map(b=>`<option${m.blood===b?' selected':''}>${esc(b)}</option>`).join('')}</select></div>
+          <div class="field"><label>Date of Birth</label>${dateField('pDob',m.dob)}</div>
+          <div class="field"><label>Marriage Date</label>${dateField('pMarriage',m.marriage)}</div>
+        </div>
+        <div class="field"><label>Address</label><textarea id="pAddr" style="min-height:74px">${esc(m.addr)}</textarea></div>
+        <div><button class="btn" onclick="saveProfile()">Save Changes</button></div>
+      </div>
+    </div></div>
+    <div>
+      <div class="card"><h3>My Business Summary</h3><div class="card-body">
+        <div class="kv">
+          <div class="k">Referrals given</div><div><b>${s.given}</b> (${s.convGiven} converted)</div>
+          <div class="k">Referrals received</div><div><b>${s.recd}</b> (${s.convRecd} converted)</div>
+          <div class="k">Business given value</div><div class="money">${inr(s.businessGiven)}</div>
+          <div class="k">Business taken value</div><div class="money">${inr(s.businessTaken)}</div>
+          <div class="k">Net contribution</div><div><b>${inr(s.businessGiven-s.businessTaken)}</b></div>
+          <div class="k">R2R meetings</div><div><b>${s.r2r}</b> (${r2rCount('month',m.id)} this month, ${r2rCount('year',m.id)} this year)</div>
+        </div>
+      </div></div>
+      <div class="card"><h3>Change Password</h3><div class="card-body">
+        <div id="pwMsg"></div>
+        <div class="grid" style="gap:13px">
+          <div class="field"><label>Current Password</label>${pwInput('pwOld','Enter current password')}</div>
+          <div class="field"><label>New Password</label>${pwInput('pwNew','Minimum 6 characters')}</div>
+          <div class="field"><label>Confirm New Password</label>${pwInput('pwNew2','Re-enter new password')}</div>
+          <div><button class="btn" onclick="changePw()">Update Password</button></div>
+        </div>
+      </div></div>
+    </div>
+  </div>`;
+}
+function pickProfilePhoto(inp){
+  const m=member(SESSION.id);
+  readPhoto(inp.files[0],d=>{
+    m.photo=d;save();render();
+    setTimeout(()=>note('profMsg','ok','Profile photo updated.'),30);
+  },msg=>note('profMsg','err',msg));
+  inp.value='';
+}
+function removeProfilePhoto(){
+  const m=member(SESSION.id);
+  if(!confirm('Remove your profile photo?'))return;
+  m.photo='';save();render();
+  setTimeout(()=>note('profMsg','ok','Profile photo removed.'),30);
+}
+function saveProfile(){
+  const m=member(SESSION.id),g=id=>document.getElementById(id).value.trim();
+  if(!g('pName')||!g('pPhone')||!g('pEmail')||!g('pCompany'))return note('profMsg','err','Name, mobile, email and company are required.');
+  const dob=toISO(g('pDob')),mar=toISO(g('pMarriage'));
+  if(dob===null)return note('profMsg','err','Enter the Date of Birth as <b>dd/mm/yyyy</b> — for example 14/08/1982.');
+  if(dob&&dob>today())return note('profMsg','err','Date of Birth cannot be in the future.');
+  if(mar===null)return note('profMsg','err','Enter the Marriage Date as <b>dd/mm/yyyy</b>, or leave it blank.');
+  if(mar&&mar>today())return note('profMsg','err','Marriage Date cannot be in the future.');
+  if(mar&&dob&&mar<dob)return note('profMsg','err','Marriage Date cannot be earlier than the Date of Birth.');
+  m.name=g('pName');m.phone=g('pPhone');m.email=g('pEmail');m.company=g('pCompany');
+  m.vertical=g('pVertical');m.blood=g('pBlood');m.dob=dob;m.marriage=mar;m.addr=g('pAddr');
+  SESSION.name=m.name;save();
+  document.getElementById('whoName').textContent=m.name;
+  document.getElementById('whoRole').textContent=m.company;
+  note('profMsg','ok','Profile updated successfully.');
+}
+function changePw(){
+  const m=member(SESSION.id);
+  const o=document.getElementById('pwOld').value,n=document.getElementById('pwNew').value,n2=document.getElementById('pwNew2').value;
+  if(!o||!n||!n2)return note('pwMsg','err','Fill all three password fields.');
+  if(m.pass!==hash(o))return note('pwMsg','err','Current password is incorrect.');
+  if(n.length<6)return note('pwMsg','err','New password must be at least 6 characters.');
+  if(n!==n2)return note('pwMsg','err','New passwords do not match.');
+  m.pass=hash(n);save();
+  ['pwOld','pwNew','pwNew2'].forEach(i=>document.getElementById(i).value='');
+  note('pwMsg','ok','Password updated successfully.');
+}
+
+/* =========================================================
+   ADMIN — DASHBOARD
+   ========================================================= */
+function vAdminDash(){
+  const pend=DB.members.filter(m=>m.status==='pending'),ap=approved();
+  const conv=DB.referrals.filter(r=>r.status==='converted');
+  const totalVal=conv.reduce((t,r)=>t+(Number(r.value)||0),0);
+  const top=ap.map(m=>({m,s:stats(m.id)})).sort((a,b)=>b.s.given-a.s.given||b.s.businessGiven-a.s.businessGiven).slice(0,5);
+  const recent=[...DB.referrals].sort((a,b)=>b.createdAt.localeCompare(a.createdAt)).slice(0,8);
+  return `
+  <div class="page-head"><div><h2>Admin Dashboard</h2><p>Full overview of RMBF Perundurai membership and business exchange.</p></div>
+    ${pend.length?`<button class="btn gold" onclick="go('approvals')">${pend.length} Pending Approval${pend.length>1?'s':''} →</button>`:''}</div>
+  <div class="stats">
+    <div class="stat b"><div class="lbl">Approved Members</div><div class="val">${ap.length}</div><div class="sub">${DB.members.length} total registrations</div></div>
+    <div class="stat"><div class="lbl">Pending Approvals</div><div class="val">${pend.length}</div><div class="sub">Awaiting your action</div></div>
+    <div class="stat b"><div class="lbl">Total Referrals</div><div class="val">${DB.referrals.length}</div><div class="sub">${DB.referrals.filter(r=>r.status==='pending').length} awaiting reply</div></div>
+    <div class="stat g"><div class="lbl">Business Converted</div><div class="val" style="color:var(--green)">${inr(totalVal)}</div><div class="sub">${conv.length} converted referrals</div></div>
+    <div class="stat b"><div class="lbl">R2R Meetings</div><div class="val">${DB.r2r.length}</div><div class="sub">${r2rCount('week')} this week • ${r2rCount('month')} this month</div></div>
+  </div>
+  <div class="grid g2">
+    <div class="card"><h3>Top Referral Contributors</h3><div class="tbl-wrap">
+      ${top.length?`<table><thead><tr><th>#</th><th>Member</th><th>Given</th><th>Converted</th><th>Business Given</th></tr></thead>
+      <tbody>${top.map((t,i)=>`<tr><td><b>${i+1}</b></td><td>${esc(t.m.name)}<div class="hint">${esc(t.m.company)}</div></td>
+      <td><b>${t.s.given}</b></td><td>${t.s.convGiven}</td><td class="money">${inr(t.s.businessGiven)}</td></tr>`).join('')}</tbody></table>`
+      :'<div class="empty">No approved members yet.</div>'}</div></div>
+    <div class="card"><h3>Latest Referrals</h3><div class="tbl-wrap">
+      ${recent.length?`<table><thead><tr><th>ID</th><th>From → To</th><th>Status</th><th>Value</th></tr></thead>
+      <tbody>${recent.map(r=>`<tr><td><b>${esc(r.id)}</b><div class="hint">${dmy(r.createdAt)}</div></td>
+      <td>${esc(mname(r.fromId))} <b>→</b> ${esc(mname(r.toId))}</td><td>${tag(r.status)}</td>
+      <td class="money">${r.status==='converted'?inr(r.value):'—'}</td></tr>`).join('')}</tbody></table>`
+      :'<div class="empty">No referrals recorded yet.</div>'}</div></div>
+  </div>`;
+}
+
+/* =========================================================
+   ADMIN — APPROVALS
+   ========================================================= */
+function vApprovals(){
+  const pend=DB.members.filter(m=>m.status==='pending');
+  const rej=DB.members.filter(m=>m.status==='rejected');
+  return `
+  <div class="page-head"><div><h2>Pending Approvals</h2><p>Review each registration. Members can only log in after approval.</p></div>
+    ${pend.length?`<span class="badge-count">${pend.length} pending</span>`:''}</div>
+  <div class="card"><h3>Awaiting Approval</h3><div class="tbl-wrap">
+    ${pend.length?`<table><thead><tr><th>Name</th><th>Company / Vertical</th><th>Contact</th><th>DOB / Marriage</th><th>Blood</th><th>Applied</th><th>Action</th></tr></thead>
+    <tbody>${pend.map(m=>`<tr>
+      <td><b>${esc(m.name)}</b><div class="hint">${esc(m.id)}</div></td>
+      <td>${esc(m.company)}<div class="hint">${esc(m.vertical)}</div></td>
+      <td>${esc(m.phone)}<div class="hint">${esc(m.email)}</div></td>
+      <td>${dmy(m.dob)}<div class="hint">${m.marriage?dmy(m.marriage):'—'}</div></td>
+      <td>${esc(m.blood)}</td><td>${dmy(m.appliedAt)}</td>
+      <td style="white-space:nowrap">
+        <button class="btn ghost sm" onclick="viewMember('${m.id}')">View</button>
+        <button class="btn ok sm" onclick="setStatus('${m.id}','approved')">Approve</button>
+        <button class="btn danger sm" onclick="setStatus('${m.id}','rejected')">Reject</button>
+      </td></tr>`).join('')}</tbody></table>`
+    :'<div class="empty">No pending registrations. All caught up.</div>'}</div></div>
+  ${rej.length?`<div class="card"><h3>Rejected Applications</h3><div class="tbl-wrap">
+    <table><thead><tr><th>Name</th><th>Company</th><th>Contact</th><th>Action</th></tr></thead>
+    <tbody>${rej.map(m=>`<tr><td>${esc(m.name)}</td><td>${esc(m.company)}</td><td>${esc(m.phone)}</td>
+    <td><button class="btn ok sm" onclick="setStatus('${m.id}','approved')">Approve Now</button></td></tr>`).join('')}</tbody></table>
+  </div></div>`:''}`;
+}
+function setStatus(id,st){
+  const m=member(id);if(!m)return;
+  if(st==='rejected'&&!confirm('Reject the registration of '+m.name+'?'))return;
+  m.status=st;if(st==='approved')m.approvedAt=stamp();
+  save();refreshLoginList();render();
+}
+function viewMember(id){
+  const m=member(id);if(!m)return;const s=stats(id);
+  document.getElementById('modalHost').innerHTML=`
+  <div class="overlay" onclick="if(event.target===this)closeModal()"><div class="modal">
+    <h3>${esc(m.name)}</h3>
+    <div class="modal-body">
+    <div style="display:flex;align-items:center;gap:14px;margin-bottom:16px">${avatar(m,76)}
+      <div><b style="font-size:15px">${esc(m.company)}</b><div class="hint">${esc(m.vertical)}</div></div></div>
+    <div class="kv">
+      <div class="k">Member ID</div><div>${esc(m.id)}</div>
+      <div class="k">Status</div><div>${m.status==='approved'?'<span class="tag conv">Approved</span>':m.status==='pending'?'<span class="tag pend">Pending</span>':'<span class="tag no">Rejected</span>'}</div>
+      <div class="k">Company</div><div>${esc(m.company)}</div>
+      <div class="k">Vertical</div><div>${esc(m.vertical)}</div>
+      <div class="k">Mobile</div><div>${esc(m.phone)}</div>
+      <div class="k">Email</div><div>${esc(m.email)}</div>
+      <div class="k">Blood group</div><div>${esc(m.blood)}</div>
+      <div class="k">Date of birth</div><div>${dmy(m.dob)}</div>
+      <div class="k">Marriage date</div><div>${m.marriage?dmy(m.marriage):'—'}</div>
+      <div class="k">Address</div><div>${esc(m.addr)}</div>
+      <div class="k">Applied on</div><div>${dmy(m.appliedAt)}</div>
+      <div class="k">Approved on</div><div>${m.approvedAt?dmy(m.approvedAt):'—'}</div>
+      <div class="k">Referrals given</div><div>${s.given} (${s.convGiven} converted)</div>
+      <div class="k">Referrals received</div><div>${s.recd} (${s.convRecd} converted)</div>
+      <div class="k">Business given</div><div class="money">${inr(s.businessGiven)}</div>
+      <div class="k">Business taken</div><div class="money">${inr(s.businessTaken)}</div>
+      <div class="k">R2R meetings</div><div>${s.r2r} (${r2rCount('month',m.id)} this month)</div>
+    </div></div>
+    <div class="modal-foot">
+      ${m.status!=='approved'?`<button class="btn ok" onclick="setStatus('${m.id}','approved');closeModal()">Approve</button>`:''}
+      <button class="btn ghost" onclick="closeModal()">Close</button>
+    </div>
+  </div></div>`;
+}
+
+/* =========================================================
+   ADMIN — ALL MEMBERS
+   ========================================================= */
+let memQ={t:'',s:''};
+function memSet(){memQ={t:document.getElementById('mqT').value.toLowerCase(),s:document.getElementById('mqS').value};
+  document.getElementById('memBody').innerHTML=memRows();}
+function memRows(){
+  const list=DB.members.filter(m=>{
+    const hay=(m.name+' '+m.company+' '+m.vertical+' '+m.phone+' '+m.email).toLowerCase();
+    return (!memQ.t||hay.includes(memQ.t))&&(!memQ.s||m.status===memQ.s);})
+    .sort((a,b)=>a.name.localeCompare(b.name));
+  if(!list.length)return '<div class="empty">No members match.</div>';
+  return `<table><thead><tr><th>ID</th><th>Member</th><th>Company</th><th>Vertical</th><th>Mobile</th><th>Status</th><th>Ref Given</th><th>Ref Recd</th><th>R2R</th><th>Biz Given</th><th>Biz Taken</th><th>Action</th></tr></thead>
+  <tbody>${list.map(m=>{const s=stats(m.id);return `<tr>
+    <td><b>${esc(m.id)}</b></td>
+    <td><div style="display:flex;align-items:center;gap:9px">${avatar(m,34)}<div><b>${esc(m.name)}</b><div class="hint">${esc(m.email)}</div></div></div></td>
+    <td>${esc(m.company)}</td><td><span class="tag blue">${esc(m.vertical)}</span></td><td>${esc(m.phone)}</td>
+    <td>${m.status==='approved'?'<span class="tag conv">Approved</span>':m.status==='pending'?'<span class="tag pend">Pending</span>':'<span class="tag no">Rejected</span>'}</td>
+    <td><b>${s.given}</b></td><td>${s.recd}</td><td>${s.r2r}</td>
+    <td class="money">${inr(s.businessGiven)}</td><td class="money">${inr(s.businessTaken)}</td>
+    <td style="white-space:nowrap"><button class="btn ghost sm" onclick="viewMember('${m.id}')">View</button>
+    <button class="btn danger sm" onclick="delMember('${m.id}')">Delete</button></td></tr>`;}).join('')}</tbody></table>`;
+}
+function vAllMembers(){
+  return `
+  <div class="page-head"><div><h2>All Members</h2><p>${DB.members.length} registrations • ${approved().length} approved</p></div>
+    <button class="btn ghost" onclick="exportMembers()">⭳ Export Members CSV</button></div>
+  <div class="card"><h3>Membership Register</h3><div class="card-body">
+    <div class="toolbar">
+      <div style="flex:2"><label>Search</label><input id="mqT" placeholder="Name, company, vertical, phone, email…" oninput="memSet()" value="${esc(memQ.t)}"></div>
+      <div><label>Status</label><select id="mqS" onchange="memSet()">
+        <option value="">All statuses</option>
+        <option value="approved"${memQ.s==='approved'?' selected':''}>Approved</option>
+        <option value="pending"${memQ.s==='pending'?' selected':''}>Pending</option>
+        <option value="rejected"${memQ.s==='rejected'?' selected':''}>Rejected</option></select></div>
+      <div style="min-width:auto"><button class="btn ghost" onclick="memQ={t:'',s:''};render()">Reset</button></div>
+    </div>
+    <div class="tbl-wrap" id="memBody">${memRows()}</div>
+  </div></div>`;
+}
+function delMember(id){
+  const m=member(id);if(!m)return;
+  const n=DB.referrals.filter(r=>r.fromId===id||r.toId===id).length;
+  const x=myR2R(id).length;
+  const linked=[n?n+' referral record(s)':'',x?x+' R2R meeting(s)':''].filter(Boolean).join(' and ');
+  if(!confirm('Delete '+m.name+'?'+(linked?'\n\n'+linked+' will also be removed.':'')+'\n\nThis cannot be undone.'))return;
+  DB.members=DB.members.filter(y=>y.id!==id);
+  DB.referrals=DB.referrals.filter(r=>r.fromId!==id&&r.toId!==id);
+  DB.r2r=DB.r2r.filter(y=>y.aId!==id&&y.bId!==id);
+  save();refreshLoginList();render();
+}
+
+/* =========================================================
+   ADMIN — ALL REFERRALS
+   ========================================================= */
+let refQ={t:'',s:''};
+function refSet(){refQ={t:document.getElementById('rqT').value.toLowerCase(),s:document.getElementById('rqS').value};
+  document.getElementById('refBody').innerHTML=refRows();}
+function refRows(){
+  const list=DB.referrals.filter(r=>{
+    const hay=(r.id+' '+mname(r.fromId)+' '+mname(r.toId)+' '+r.desc+' '+(r.client||'')).toLowerCase();
+    return (!refQ.t||hay.includes(refQ.t))&&(!refQ.s||r.status===refQ.s);})
+    .sort((a,b)=>b.createdAt.localeCompare(a.createdAt));
+  if(!list.length)return '<div class="empty">No referrals match.</div>';
+  return `<table><thead><tr><th>ID</th><th>Date</th><th>From (Giver)</th><th>To (Receiver)</th><th>Client</th><th>Description</th><th>Status</th><th>Value</th><th>Remarks</th><th></th></tr></thead>
+  <tbody>${list.map(r=>`<tr>
+    <td><b>${esc(r.id)}</b></td><td>${dmy(r.createdAt)}</td>
+    <td>${esc(mname(r.fromId))}</td><td>${esc(mname(r.toId))}</td><td>${esc(r.client||'—')}</td>
+    <td style="max-width:250px">${esc(r.desc)}</td><td>${tag(r.status)}</td>
+    <td class="money">${r.status==='converted'?inr(r.value):'—'}</td>
+    <td>${esc(r.replyNote||'—')}</td>
+    <td><button class="btn danger sm" onclick="delReferral('${r.id}')">Delete</button></td></tr>`).join('')}</tbody></table>`;
+}
+function vAllReferrals(){
+  const c=DB.referrals.filter(r=>r.status==='converted');
+  return `
+  <div class="page-head"><div><h2>All Referrals</h2>
+    <p>${DB.referrals.length} referrals • ${c.length} converted • ${inr(c.reduce((t,r)=>t+(Number(r.value)||0),0))} total business</p></div>
+    <button class="btn ghost" onclick="exportReferrals()">⭳ Export Referrals CSV</button></div>
+  <div class="card"><h3>Referral Register</h3><div class="card-body">
+    <div class="toolbar">
+      <div style="flex:2"><label>Search</label><input id="rqT" placeholder="Ref ID, member, client, description…" oninput="refSet()" value="${esc(refQ.t)}"></div>
+      <div><label>Status</label><select id="rqS" onchange="refSet()">
+        <option value="">All statuses</option>
+        <option value="pending"${refQ.s==='pending'?' selected':''}>Awaiting Reply</option>
+        <option value="converted"${refQ.s==='converted'?' selected':''}>Business Converted</option>
+        <option value="not_converted"${refQ.s==='not_converted'?' selected':''}>Not Converted</option></select></div>
+      <div style="min-width:auto"><button class="btn ghost" onclick="refQ={t:'',s:''};render()">Reset</button></div>
+    </div>
+    <div class="tbl-wrap" id="refBody">${refRows()}</div>
+  </div></div>`;
+}
+function delReferral(id){
+  if(!confirm('Delete referral '+id+'? This cannot be undone.'))return;
+  DB.referrals=DB.referrals.filter(r=>r.id!==id);save();render();
+}
+
+/* =========================================================
+   ADMIN — REPORTS
+   ========================================================= */
+function vReports(){
+  const ap=approved();
+  const rows=ap.map(m=>({m,s:stats(m.id)}));
+  const tot=rows.reduce((t,r)=>({g:t.g+r.s.given,rc:t.rc+r.s.recd,x:t.x+r.s.r2r,bg:t.bg+r.s.businessGiven,bt:t.bt+r.s.businessTaken}),{g:0,rc:0,x:0,bg:0,bt:0});
+  const byVert={};
+  ap.forEach(m=>{const s=stats(m.id);
+    if(!byVert[m.vertical])byVert[m.vertical]={n:0,g:0,rc:0,x:0,bg:0,bt:0};
+    const v=byVert[m.vertical];v.n++;v.g+=s.given;v.rc+=s.recd;v.x+=s.r2r;v.bg+=s.businessGiven;v.bt+=s.businessTaken;});
+  const vlist=Object.entries(byVert).sort((a,b)=>b[1].bt-a[1].bt);
+  const max=Math.max(1,...rows.map(r=>r.s.given));
+  const lead=[...rows].sort((a,b)=>b.s.given-a.s.given||b.s.businessGiven-a.s.businessGiven);
+  return `
+  <div class="page-head"><div><h2>Reports &amp; Export</h2><p>Consolidated referral and business performance for RMBF Perundurai.</p></div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button class="btn ghost" onclick="exportSummary()">⭳ Summary CSV</button>
+      <button class="btn ghost" onclick="exportReferrals()">⭳ Referrals CSV</button>
+      <button class="btn ghost" onclick="exportR2R()">⭳ R2R CSV</button>
+      <button class="btn ghost" onclick="exportMembers()">⭳ Members CSV</button>
+      <button class="btn gold" onclick="window.print()">🖨 Print</button>
+    </div></div>
+  <div class="stats">
+    <div class="stat b"><div class="lbl">Total Referrals Exchanged</div><div class="val">${tot.g}</div></div>
+    <div class="stat g"><div class="lbl">Total Business Converted</div><div class="val" style="color:var(--green)">${inr(tot.bt)}</div></div>
+    <div class="stat"><div class="lbl">Conversion Rate</div><div class="val">${DB.referrals.length?Math.round(DB.referrals.filter(r=>r.status==='converted').length/DB.referrals.length*100):0}%</div><div class="sub">of all referrals given</div></div>
+    <div class="stat b"><div class="lbl">Avg Business / Referral</div><div class="val">${inr(DB.referrals.filter(r=>r.status==='converted').length?Math.round(tot.bt/DB.referrals.filter(r=>r.status==='converted').length):0)}</div></div>
+    <div class="stat"><div class="lbl">R2R Meetings</div><div class="val">${DB.r2r.length}</div><div class="sub">${r2rCount('month')} this month • ${r2rCount('6m')} last 6 months</div></div>
+  </div>
+
+  <div class="card"><h3>Member-wise Performance</h3><div class="tbl-wrap">
+    ${rows.length?`<table><thead><tr><th>Member</th><th>Company</th><th>Vertical</th><th>Ref Given</th><th>Ref Received</th><th>Converted (as giver)</th><th>R2R Meetings</th><th>Business Given Value</th><th>Business Taken Value</th></tr></thead>
+    <tbody>${lead.map(r=>`<tr>
+      <td><b>${esc(r.m.name)}</b></td><td>${esc(r.m.company)}</td><td>${esc(r.m.vertical)}</td>
+      <td><b>${r.s.given}</b></td><td>${r.s.recd}</td><td>${r.s.convGiven}</td><td>${r.s.r2r}</td>
+      <td class="money">${inr(r.s.businessGiven)}</td><td class="money">${inr(r.s.businessTaken)}</td></tr>`).join('')}
+      <tr style="background:var(--gold-lt);font-weight:800">
+      <td colspan="3">TOTAL</td><td>${tot.g}</td><td>${tot.rc}</td><td>—</td><td>${tot.x}</td>
+      <td>${inr(tot.bg)}</td><td>${inr(tot.bt)}</td></tr></tbody></table>`
+    :'<div class="empty">No approved members yet.</div>'}</div></div>
+
+  <div class="card"><h3>R2R Meetings by Period</h3><div class="tbl-wrap">
+    <table><thead><tr><th>Period</th><th>Meetings Logged</th><th>Member Participations</th><th>Members Involved</th></tr></thead>
+    <tbody>${[['week','This Week'],['month','This Month'],['6m','Last 6 Months'],['year','This Year'],['all','All Time']].map(([p,l])=>{
+      const set=DB.r2r.filter(x=>inPeriod(x.date,p));
+      const who=new Set();set.forEach(x=>{who.add(x.aId);who.add(x.bId);});
+      return `<tr><td><b>${l}</b></td><td><b>${set.length}</b></td><td>${set.length*2}</td><td>${who.size}</td></tr>`;}).join('')}
+    </tbody></table></div></div>
+
+  <div class="grid g2">
+    <div class="card"><h3>Referral Leaderboard</h3><div class="card-body">
+      ${lead.length?lead.slice(0,10).map((r,i)=>`
+        <div style="margin-bottom:11px">
+          <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px">
+            <span><b>${i+1}. ${esc(r.m.name)}</b> <span class="hint" style="display:inline">${esc(r.m.company)}</span></span>
+            <span><b>${r.s.given}</b> referrals</span></div>
+          <div style="height:9px;background:var(--line);border-radius:6px;overflow:hidden">
+            <div style="height:100%;width:${Math.round(r.s.given/max*100)}%;background:linear-gradient(90deg,var(--blue),var(--gold))"></div></div>
+        </div>`).join(''):'<div class="empty">No data.</div>'}
+    </div></div>
+    <div class="card"><h3>Vertical-wise Summary</h3><div class="tbl-wrap">
+      ${vlist.length?`<table><thead><tr><th>Vertical</th><th>Members</th><th>Given</th><th>Received</th><th>R2R</th><th>Business Taken</th></tr></thead>
+      <tbody>${vlist.map(([k,v])=>`<tr><td><b>${esc(k)}</b></td><td>${v.n}</td><td>${v.g}</td><td>${v.rc}</td><td>${v.x}</td><td class="money">${inr(v.bt)}</td></tr>`).join('')}</tbody></table>`
+      :'<div class="empty">No data.</div>'}</div></div>
+  </div>`;
+}
+
+/* ---------- CSV export ---------- */
+function csvCell(v){v=String(v==null?'':v).replace(/"/g,'""');return '"'+v+'"';}
+function download(name,rows){
+  const csv=rows.map(r=>r.map(csvCell).join(',')).join('\r\n');
+  const blob=new Blob(['﻿'+csv],{type:'text/csv;charset=utf-8;'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);
+  a.download=name.replace('{d}',today());document.body.appendChild(a);a.click();
+  setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},400);
+}
+function exportMembers(){
+  const rows=[['Member ID','Name','Company','Vertical','Mobile','Email','Blood Group','DOB','Marriage Date','Address','Photo','Status','Applied On','Approved On','Referrals Given','Referrals Received','R2R Meetings','Business Given Value','Business Taken Value']];
+  DB.members.forEach(m=>{const s=stats(m.id);
+    rows.push([m.id,m.name,m.company,m.vertical,m.phone,m.email,m.blood,dmy(m.dob),m.marriage?dmy(m.marriage):'',m.addr,m.photo?'Yes':'No',m.status,dmy(m.appliedAt),m.approvedAt?dmy(m.approvedAt):'',s.given,s.recd,s.r2r,s.businessGiven,s.businessTaken]);});
+  download('RMBF-Members-{d}.csv',rows);
+}
+function exportReferrals(){
+  const rows=[['Referral ID','Date','Given By','Giver Company','Given To','Receiver Company','Client','Client Contact','Description','Estimated Value','Status','Converted Value','Remarks','Replied On']];
+  DB.referrals.forEach(r=>{const f=member(r.fromId),t=member(r.toId);
+    rows.push([r.id,dmy(r.createdAt),mname(r.fromId),f?f.company:'',mname(r.toId),t?t.company:'',r.client||'',r.contact||'',r.desc,r.estimate||0,
+      r.status==='converted'?'Business Converted':r.status==='not_converted'?'Not Converted':'Awaiting Reply',
+      r.status==='converted'?r.value:0,r.replyNote||'',r.repliedAt?dmy(r.repliedAt):'']);});
+  download('RMBF-Referrals-{d}.csv',rows);
+}
+function exportSummary(){
+  const rows=[['RMBF Perundurai — Business Summary','Generated '+dmy(today())],[],
+    ['Member ID','Name','Company','Vertical','Referrals Given','Referrals Received','Converted as Giver','Converted as Receiver','Business Given Value','Business Taken Value','Net','R2R This Week','R2R This Month','R2R Last 6 Months','R2R This Year','R2R All Time']];
+  approved().forEach(m=>{const s=stats(m.id);
+    rows.push([m.id,m.name,m.company,m.vertical,s.given,s.recd,s.convGiven,s.convRecd,s.businessGiven,s.businessTaken,s.businessGiven-s.businessTaken,
+      r2rCount('week',m.id),r2rCount('month',m.id),r2rCount('6m',m.id),r2rCount('year',m.id),s.r2r]);});
+  rows.push([]);
+  rows.push(['R2R MEETINGS LOGGED','This Week',r2rCount('week'),'This Month',r2rCount('month'),
+    'Last 6 Months',r2rCount('6m'),'This Year',r2rCount('year'),'All Time',DB.r2r.length]);
+  download('RMBF-Summary-{d}.csv',rows);
+}
+
+/* =========================================================
+   ADMIN — SETTINGS
+   ========================================================= */
+function vSettings(){
+  return `
+  <div class="page-head"><div><h2>Settings</h2><p>Administrator credentials and data management.</p></div></div>
+  <div class="grid g2">
+    <div class="card"><h3>My Administrator Password</h3><div class="card-body">
+      <div id="adMsg"></div>
+      <div class="grid" style="gap:13px">
+        <div class="field"><label>Login Username</label>
+          <input value="${esc((member(SESSION.id)||{}).handle||'').replace('@rmbf.app','')}" readonly style="background:#F4F7FC">
+          <div class="hint">Your username is fixed. To add another administrator, approve a member and change their role in the database.</div></div>
+        <div class="field"><label>Current Password</label>${pwInput('adOld','Enter current password')}</div>
+        <div class="field"><label>New Password</label>${pwInput('adNew','Minimum 6 characters')}</div>
+        <div class="field"><label>Confirm New Password</label>${pwInput('adNew2','Re-enter new password')}</div>
+        <div><button class="btn" onclick="saveAdmin()">Update Password</button></div>
+      </div>
+    </div></div>
+    <div>
+      <div class="card"><h3>Database &amp; Exports</h3><div class="card-body">
+        <div id="dataMsg"></div>
+        <p style="font-size:13.3px;color:var(--muted);margin-bottom:13px">
+          This portal is live on Supabase — <b>${DB.members.length} members</b>, <b>${DB.referrals.length} referrals</b>,
+          <b>${DB.r2r.length} R2R meetings</b> and <b>${DB.verticals.length} verticals</b>.
+          Records are stored on the server, so every member sees the same data from any device,
+          and Supabase handles the backups.</p>
+        <div style="display:flex;gap:9px;flex-wrap:wrap;margin-bottom:15px">
+          <button class="btn" onclick="backup()">⭳ Download All CSV Exports</button>
+          <button class="btn ghost" onclick="refresh()">⟳ Reload From Database</button>
+        </div>
+      </div></div>
+      <div class="card"><h3>How Business Values Work</h3><div class="card-body">
+        <div style="font-size:13.3px;line-height:1.7">
+          <b>Referral given</b> — counted the moment a member submits a referral.<br>
+          <b>Awaiting reply</b> — the receiving member has not yet responded.<br>
+          <b>Business Converted</b> — the receiver enters the closed value. That value is credited as
+          <b>Business Taken</b> to the receiver and <b>Business Given</b> to the referring member.<br>
+          <b>Not Converted</b> — logged with remarks; no business value recorded.<br>
+          <b>R2R meeting</b> — a one-to-one meet between two members. One record counts for both
+          members and appears in both their reports.
+        </div>
+      </div></div>
+    </div>
+  </div>`;
+}
+function saveAdmin(){
+  const u=document.getElementById('adUser').value.trim(),o=document.getElementById('adOld').value,
+        n=document.getElementById('adNew').value,n2=document.getElementById('adNew2').value;
+  if(!u)return note('adMsg','err','Username cannot be blank.');
+  if(!o)return note('adMsg','err','Enter your current password to make changes.');
+  if(DB.admin.pass!==hash(o))return note('adMsg','err','Current password is incorrect.');
+  if(n){if(n.length<6)return note('adMsg','err','New password must be at least 6 characters.');
+        if(n!==n2)return note('adMsg','err','New passwords do not match.');DB.admin.pass=hash(n);}
+  DB.admin.user=u;save();
+  ['adOld','adNew','adNew2'].forEach(i=>document.getElementById(i).value='');
+  note('adMsg','ok','Admin credentials updated.');
+}
+function backup(){
+  const blob=new Blob([JSON.stringify(DB,null,2)],{type:'application/json'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);
+  a.download='RMBF-Backup-'+today()+'.json';document.body.appendChild(a);a.click();
+  setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},400);
+}
+function restore(inp){
+  const f=inp.files[0];if(!f)return;
+  const fr=new FileReader();
+  fr.onload=()=>{try{
+      const d=JSON.parse(fr.result);
+      if(!d||!Array.isArray(d.members)||!Array.isArray(d.referrals))throw new Error('Not a valid RMBF backup file.');
+      if(!confirm('Restore this backup? Current data ('+DB.members.length+' members) will be replaced.'))return;
+      DB=d;normalize();
+      save();refreshLoginList();refreshVerticalPickers();render();
+      setTimeout(()=>note('dataMsg','ok','Backup restored: '+DB.members.length+' members, '+DB.referrals.length+' referrals, '+DB.r2r.length+' R2R meetings.'),60);
+    }catch(e){alert('Restore failed: '+e.message);} inp.value='';};
+  fr.readAsText(f);
+}
+function wipe(){
+  if(!confirm('Erase ALL portal data — members, referrals and admin settings?\n\nThis cannot be undone. Download a backup first.'))return;
+  if(!confirm('Final confirmation: erase everything?'))return;
+  DB=blank();save();refreshLoginList();refreshVerticalPickers();logoutSilent();
+}
+function logoutSilent(){
+  SESSION=null;CUR='dash';
+  document.getElementById('app').classList.add('hide');
+  document.getElementById('nav').classList.add('hide');
+  document.getElementById('whoBox').classList.add('hide');
+  document.getElementById('authScreen').classList.remove('hide');
+  resetLoginFields();showLogin();showTab('member');
+}
+
+/* ---------- demo data ---------- */
+function loadDemo(){
+  if(DB.members.length&&!confirm('This adds sample members and referrals to the existing data. Continue?'))return;
+  const d=[
+    ['Rtn. Inbaraj K','9876500001','inbaraj@example.com','Sri Balaji Textiles','Textiles & Garments','O+','1982-08-14','2009-02-11','12 Bhavani Road, Perundurai 638052'],
+    ['Rtn. Suresh Kumar','9876500002','suresh@example.com','SK Engineering Works','Engineering & Manufacturing','B+','1975-03-22','2003-06-18','45 SIPCOT Phase 1, Perundurai'],
+    ['Rtn. Lakshmi Priya','9876500003','lakshmi@example.com','Priya Interiors','Interior & Furniture','A+','1988-11-05','2014-09-07','8 Kongu Nagar, Perundurai'],
+    ['Rtn. Mohan Raj','9876500004','mohan@example.com','Raj Auto Spares','Automobile & Spares','AB+','1979-07-30','2006-12-03','Main Bazaar, Perundurai'],
+    ['Rtn. Anitha S','9876500005','anitha@example.com','Anitha Dental Care','Healthcare & Hospitals','O-','1985-01-19','2011-05-21','Hospital Road, Perundurai'],
+    ['Rtn. Karthik V','9876500006','karthik@example.com','VK Solar Solutions','Solar & Renewable Energy','B-','1990-09-09','','Erode Main Road, Perundurai']
+  ];
+  const ids=[];
+  d.forEach(r=>{const id=mid();ids.push(id);
+    DB.members.push({id,name:r[0],phone:r[1],email:r[2],company:r[3],vertical:r[4],blood:r[5],
+      dob:r[6],marriage:r[7],addr:r[8],pass:hash('rmbf123'),status:'approved',appliedAt:stamp(),approvedAt:stamp()});});
+  const pid=mid();
+  DB.members.push({id:pid,name:'Rtn. Deepa R','phone':'9876500007',email:'deepa@example.com',
+    company:'Deepa Printers',vertical:'Printing & Packaging',blood:'A-',dob:'1986-04-27',marriage:'2012-08-30',
+    addr:'Nehru Street, Perundurai',pass:hash('rmbf123'),status:'pending',appliedAt:stamp(),approvedAt:''});
+  const R=(f,t,desc,client,st,val,note,date)=>DB.referrals.push({id:rid(),fromId:ids[f],toId:ids[t],desc,client,
+    contact:'98765'+String(11000+f*7+t),estimate:val||0,status:st,value:st==='converted'?val:0,replyNote:note,createdAt:date,repliedAt:st==='pending'?'':date});
+  R(0,1,'Client needs 4 custom conveyor frames for a garment unit expansion. Budget around 4-5 lakhs, delivery in 6 weeks.','Velavan Garments','converted',480000,'Order confirmed and delivered. Payment received.','2026-05-12');
+  R(1,2,'New 3000 sqft office at SIPCOT needs full interior — cabins, false ceiling, modular workstations.','SK Engineering Works','converted',920000,'Project completed in June.','2026-04-08');
+  R(2,4,'My client family of 5 looking for orthodontic treatment and regular dental care.','Sundaram family','converted',65000,'Treatment ongoing, first phase billed.','2026-06-02');
+  R(3,5,'Textile unit wants 50kW rooftop solar. Owner is keen on subsidy options.','Amman Spinning Mills','pending',700000,'','2026-07-18');
+  R(4,0,'Need 200 uniform sets for clinic staff and housekeeping, cotton blend.','Anitha Dental Care','converted',86000,'Supplied all 200 sets.','2026-06-21');
+  R(5,3,'Customer needs a full set of tyres and brake service for a commercial van fleet (6 vehicles).','Sree Logistics','not_converted',0,'Client went with an Erode dealer on price. Will follow up next cycle.','2026-05-30');
+  R(0,2,'Home renovation lead — 3BHK, wants modular kitchen plus wardrobes.','Ramesh Babu','pending',350000,'','2026-07-25');
+  R(1,5,'Factory shed needs 25kW solar with net metering.','SK Engineering Works','converted',340000,'Installed and commissioned.','2026-03-15');
+  R(2,1,'Client needs custom MS staircase and railing fabrication for a villa project.','Green Valley Villas','pending',0,'','2026-07-28');
+  R(4,3,'Patient referral — needs a second-hand car in good condition, budget 6 lakhs.','Dr. Vignesh','converted',595000,'Sold a certified pre-owned sedan.','2026-06-11');
+  // R2R meetings — dates relative to today so the period filters always show data
+  const ago=n=>{const d=new Date();d.setHours(0,0,0,0);d.setDate(d.getDate()-n);return d.toISOString().slice(0,10);};
+  const X=(a,b,n,loc,ben)=>DB.r2r.push({id:xid(),aId:ids[a],bId:ids[b],date:ago(n),location:loc,benefit:ben,loggedBy:ids[a],createdAt:ago(n)});
+  X(0,1,1,'SK Engineering Works, SIPCOT Phase 1','Saw his machining and welding capacity first hand. Now confident to refer garment-unit machinery work — two prospects identified in Erode.');
+  X(2,4,3,'Anitha Dental Care, Hospital Road','Interior quote for her clinic expansion is being prepared. Clear collaboration opportunity.');
+  X(1,5,6,'VK Solar office, Erode Main Road','Understood solar sizing and subsidy paperwork well enough to refer factory owners. One referral already sent.');
+  X(3,0,12,'Raj Auto Spares, Main Bazaar','Uniform and workwear order discussion started; also agreed to cross-promote to each other customers.');
+  X(4,5,20,'Hotel Sri Krishna, Perundurai','Solar plus inverter proposal for the clinic to be shared next week.');
+  X(0,2,34,'Priya Interiors showroom, Kongu Nagar','She will source curtain and upholstery fabric from my unit. Recurring supply opportunity.');
+  X(1,3,52,'Raj Auto Spares godown','Storage rack fabrication order under negotiation.');
+  X(5,2,88,'Site visit, Green Valley Villas','Agreed to bid jointly on villa projects — solar plus interiors. First joint proposal in progress.');
+  X(3,4,140,'Anitha Dental Care','Annual vehicle service contract signed for two clinic vehicles.');
+  save();refreshLoginList();refreshVerticalPickers();render();
+  alert('Sample data loaded.\n\n6 approved members + 1 pending, 10 referrals and 9 R2R meetings.\n\nMember password for all demo accounts: rmbf123');
+}
+
+/* =========================================================
+   BOOT
+   ========================================================= */
+/* =========================================================================
+   SUPABASE DATA LAYER
+   Everything below re-defines the browser-storage functions declared earlier
+   in this file. All view, report, stats and export code is untouched — the
+   sync step loads Supabase rows into exactly the same in-memory shape.
+   ========================================================================= */
+const SB = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+let LOGIN_DIR = [];      // approved members, readable before sign-in
+let VERT_ROWS = [];      // {id, name} from the verticals table
+let UID = {};            // short id  -> uuid
+let SHORT = {};          // uuid      -> short id
+let BUSY = false;
+
+function shortId(prefix,uuid){return prefix+String(uuid).replace(/-/g,'').slice(0,6).toUpperCase();}
+function isoDate(d){return d?String(d).slice(0,10):'';}
+function uidOf(sid){return UID[sid]||sid;}
+function busy(on){BUSY=on;document.body.style.cursor=on?'progress':'';}
+
+function fail(box,e){
+  const msg=(e&&(e.message||e.error_description||e.error))||String(e||'Something went wrong.');
+  if(box)note(box,'err',esc(msg));else alert(msg);
+  return false;
+}
+
+/* ---------- row mappers ---------- */
+function mapMember(r){
+  const sid=shortId('M',r.id);
+  return {id:sid,uid:r.id,authId:r.auth_user_id||'',handle:r.email||'',
+    name:r.name||'',phone:r.phone||'',email:r.contact_email||'',company:r.company||'',
+    vertical:r.vertical||'Others',blood:r.blood_group||'Not known',
+    dob:isoDate(r.birthday),marriage:isoDate(r.anniversary),addr:r.address||'',
+    photo:r.photo_url||'',status:r.status,role:r.role||'member',
+    appliedAt:isoDate(r.created_at),
+    approvedAt:r.status==='approved'?isoDate(r.joined_date||r.created_at):''};
+}
+function mapReferral(r){
+  return {id:shortId('R',r.id),uid:r.id,
+    fromId:SHORT[r.from_member_id]||r.from_member_id,
+    toId:SHORT[r.to_member_id]||r.to_member_id,
+    desc:r.notes||'',client:r.contact_name||'',contact:r.contact_phone||'',
+    estimate:Number(r.estimated_value)||0,
+    status:r.status==='open'?'pending':r.status,
+    value:Number(r.converted_value)||0,replyNote:r.thank_you_note||'',
+    createdAt:isoDate(r.created_at),repliedAt:isoDate(r.closed_at)};
+}
+function mapR2R(r){
+  return {id:shortId('X',r.id),uid:r.id,
+    aId:SHORT[r.member_a_id]||r.member_a_id,
+    bId:SHORT[r.member_b_id]||r.member_b_id,
+    date:isoDate(r.meeting_date),location:r.location||'',benefit:r.benefit||'',
+    loggedBy:SHORT[r.posted_by_id]||r.posted_by_id,
+    createdAt:isoDate(r.created_at)};
+}
+
+/* ---------- sync ---------- */
+function blank(){return {members:[],referrals:[],r2r:[],verticals:[],admin:{user:'admin'},seq:{}};}
+function load(){DB=DB||blank();}
+function normalize(){}
+function save(){/* every write goes straight to Supabase */}
+
+async function loadPublic(){
+  const [d,v]=await Promise.all([
+    SB.from('member_login_directory').select('*'),
+    SB.from('verticals').select('id,name,sort_order')
+  ]);
+  LOGIN_DIR = d.error?[]:(d.data||[]);
+  VERT_ROWS = v.error?[]:(v.data||[]).sort((a,b)=>
+    (a.sort_order||100)-(b.sort_order||100)||a.name.localeCompare(b.name));
+  DB.verticals = VERT_ROWS.map(r=>r.name);
+  if(d.error)console.warn('login directory:',d.error.message);
+}
+
+async function syncAll(){
+  const [m,r,x,v]=await Promise.all([
+    SB.from('members').select('*'),
+    SB.from('referrals').select('*'),
+    SB.from('r2r_meetings').select('*'),
+    SB.from('verticals').select('id,name,sort_order')
+  ]);
+  if(m.error)throw m.error;
+  UID={};SHORT={};
+  (m.data||[]).forEach(row=>{const s=shortId('M',row.id);UID[s]=row.id;SHORT[row.id]=s;});
+  DB.members   = (m.data||[]).map(mapMember).sort((a,b)=>a.name.localeCompare(b.name));
+  DB.referrals = (r.data||[]).map(mapReferral);
+  DB.r2r       = (x.data||[]).map(mapR2R);
+  VERT_ROWS    = (v.data||[]).sort((a,b)=>(a.sort_order||100)-(b.sort_order||100)||a.name.localeCompare(b.name));
+  DB.verticals = VERT_ROWS.map(row=>row.name);
+  if(r.error)console.warn('referrals:',r.error.message);
+  if(x.error)console.warn('r2r:',x.error.message);
+}
+async function refresh(){await syncAll();render();}
+
+/* ---------- login screen ---------- */
+function refreshLoginList(){
+  const sel=document.getElementById('loginMemberSel');
+  if(!sel)return;
+  sel.innerHTML = LOGIN_DIR.length
+    ? '<option value="">-- Select your name --</option>'+LOGIN_DIR.map(m=>
+        `<option value="${esc(m.login_handle)}">${esc(m.name)}${m.company?' — '+esc(m.company):''}</option>`).join('')
+    : '<option value="">No approved members yet</option>';
+}
+function refreshVerticalPickers(){
+  const el=document.getElementById('rVertical');
+  if(el){const keep=el.value;fillSelect(el,verts(),'-- Select vertical --');el.value=keep;}
+}
+function verts(){return DB.verticals.slice();}
+
+async function signIn(handle,password,box){
+  const {error}=await SB.auth.signInWithPassword({email:handle,password});
+  if(error){
+    note(box,'err',/Invalid login/i.test(error.message)
+      ? 'Incorrect password. Please try again.' : esc(error.message));
+    return false;
+  }
+  return true;
+}
+async function startSession(box){
+  const {data:{user}}=await SB.auth.getUser();
+  if(!user){note(box,'err','Could not start your session. Please try again.');return false;}
+  try{await syncAll();}catch(e){return fail(box,e);}
+  const me=DB.members.find(m=>m.authId===user.id);
+  if(!me){
+    await SB.auth.signOut();
+    return fail(box,'No member profile is linked to this login. Please contact the admin.');
+  }
+  if(me.status!=='approved'){
+    await SB.auth.signOut();
+    return fail(box, me.status==='pending'
+      ? 'Your account is still awaiting admin approval.'
+      : 'Your account is not active. Please contact the admin.');
+  }
+  SESSION = (me.role==='admin'||me.role==='chairman')
+    ? {role:'admin',id:me.id,name:me.name,uid:me.uid}
+    : {role:'member',id:me.id,name:me.name,uid:me.uid};
+  return true;
+}
+
+async function memberLogin(){
+  if(BUSY)return; clearNote('mLoginMsg');
+  const handle=document.getElementById('loginMemberSel').value;
+  const pw=document.getElementById('loginMemberPass').value;
+  if(!handle)return note('mLoginMsg','err','Please select your name from the list.');
+  if(!pw)return note('mLoginMsg','err','Please enter your password.');
+  busy(true);
+  try{
+    if(await signIn(handle,pw,'mLoginMsg') && await startSession('mLoginMsg')){
+      document.getElementById('loginMemberPass').value='';
+      enterApp();
+    }
+  }finally{busy(false);}
+}
+async function adminLogin(){
+  if(BUSY)return; clearNote('aLoginMsg');
+  const u=document.getElementById('loginAdminUser').value.trim().toLowerCase();
+  const pw=document.getElementById('loginAdminPass').value;
+  if(!u||!pw)return note('aLoginMsg','err','Enter both username and password.');
+  busy(true);
+  try{
+    const handle=u.includes('@')?u:u+LOGIN_DOMAIN;
+    if(!await signIn(handle,pw,'aLoginMsg'))return;
+    if(!await startSession('aLoginMsg'))return;
+    if(SESSION.role!=='admin'){
+      await SB.auth.signOut();SESSION=null;
+      return note('aLoginMsg','err','That account does not have administrator access.');
+    }
+    document.getElementById('loginAdminPass').value='';
+    enterApp();
+  }finally{busy(false);}
+}
+async function logout(){
+  if(!confirm('Log out of RMBF Business Forum?'))return;
+  await SB.auth.signOut();
+  SESSION=null;CUR='dash';DB=blank();
+  document.getElementById('app').classList.add('hide');
+  document.getElementById('nav').classList.add('hide');
+  document.getElementById('whoBox').classList.add('hide');
+  document.getElementById('authScreen').classList.remove('hide');
+  clearNote('mLoginMsg');clearNote('aLoginMsg');clearNote('regMsg');
+  await loadPublic();refreshLoginList();refreshVerticalPickers();
+  resetLoginFields();showLogin();showTab('member');
+}
+function logoutSilent(){logout();}
+
+/* ---------- registration ---------- */
+async function submitRegistration(){
+  if(BUSY)return;
+  const g=id=>document.getElementById(id).value.trim();
+  const d={user:g('rUser').toLowerCase(),name:g('rName'),phone:g('rPhone'),email:g('rEmail'),
+    company:g('rCompany'),vertical:g('rVertical'),blood:g('rBlood'),
+    dob:g('rDob'),marriage:g('rMarriage'),addr:g('rAddr'),p1:g('rPass'),p2:g('rPass2')};
+  const miss=[];
+  if(!d.name)miss.push('Full Name'); if(!d.phone)miss.push('Mobile Number');
+  if(!d.email)miss.push('Email ID'); if(!d.company)miss.push('Company Name');
+  if(!d.vertical)miss.push('Business Vertical'); if(!d.dob)miss.push('Date of Birth');
+  if(!d.addr)miss.push('Address'); if(!d.user)miss.push('Username'); if(!d.p1)miss.push('Password');
+  if(miss.length)return note('regMsg','err','Please fill the required field(s): '+miss.join(', '));
+  if(!/^[a-z0-9._-]{3,30}$/.test(d.user))
+    return note('regMsg','err','Username must be 3–30 characters: letters, numbers, dot, dash or underscore.');
+  if(!/^[0-9+\-\s()]{10,15}$/.test(d.phone))return note('regMsg','err','Enter a valid mobile number (10–15 digits).');
+  if(!/^[^@\s]+@[^@\s]+\.[^@\s]{2,}$/.test(d.email))return note('regMsg','err','Enter a valid email address.');
+  const dob=toISO(d.dob),mar=toISO(d.marriage);
+  if(dob===null||!dob)return note('regMsg','err','Enter the Date of Birth as <b>dd/mm/yyyy</b> — for example 14/08/1982.');
+  if(dob>today())return note('regMsg','err','Date of Birth cannot be in the future.');
+  if(mar===null)return note('regMsg','err','Enter the Marriage Date as <b>dd/mm/yyyy</b>, or leave it blank.');
+  if(mar&&mar>today())return note('regMsg','err','Marriage Date cannot be in the future.');
+  if(mar&&mar<dob)return note('regMsg','err','Marriage Date cannot be earlier than the Date of Birth.');
+  if(d.p1.length<6)return note('regMsg','err','Password must be at least 6 characters.');
+  if(d.p1!==d.p2)return note('regMsg','err','Password and Confirm Password do not match.');
+
+  busy(true);
+  try{
+    const {data,error}=await SB.rpc('register_member_full',{
+      p_username:d.user,p_password:d.p1,p_name:d.name,p_phone:d.phone,
+      p_contact_email:d.email,p_company:d.company,p_vertical:d.vertical,
+      p_blood_group:d.blood||'Not known',p_birthday:dob,p_anniversary:mar||null,
+      p_address:d.addr,p_photo:REG_PHOTO||null});
+    if(error)return fail('regMsg',error);
+    if(!data||data.ok!==true)return fail('regMsg',(data&&data.error)||'Registration failed.');
+    ['rUser','rName','rPhone','rEmail','rCompany','rDob','rMarriage','rAddr','rPass','rPass2']
+      .forEach(i=>document.getElementById(i).value='');
+    document.getElementById('rVertical').value='';document.getElementById('rBlood').value='';
+    REG_PHOTO='';paintRegPhoto();
+    note('regMsg','ok','Registration saved. Your account is <b>pending admin approval</b> — you will be able to log in as <b>'+esc(d.user)+'</b> once approved.');
+    window.scrollTo(0,0);
+  }finally{busy(false);}
+}
+
+/* ---------- admin: approvals & members ---------- */
+async function setStatus(id,st){
+  const m=member(id);if(!m)return;
+  if(st==='rejected'&&!confirm('Reject the registration of '+m.name+'?'))return;
+  busy(true);
+  try{
+    const patch={status:st};
+    if(st==='approved'){patch.is_active=true;patch.joined_date=today();}
+    const {error}=await SB.from('members').update(patch).eq('id',m.uid);
+    if(error)return fail(null,error);
+    await loadPublic();refreshLoginList();await refresh();
+  }finally{busy(false);}
+}
+async function delMember(id){
+  const m=member(id);if(!m)return;
+  const n=DB.referrals.filter(r=>r.fromId===id||r.toId===id).length;
+  const x=myR2R(id).length;
+  const linked=[n?n+' referral record(s)':'',x?x+' R2R meeting(s)':''].filter(Boolean).join(' and ');
+  if(!confirm('Delete '+m.name+'?'+(linked?'\n\n'+linked+' will also be removed.':'')+'\n\nThis cannot be undone.'))return;
+  busy(true);
+  try{
+    await SB.from('referrals').delete().or(`from_member_id.eq.${m.uid},to_member_id.eq.${m.uid}`);
+    await SB.from('r2r_meetings').delete().or(`member_a_id.eq.${m.uid},member_b_id.eq.${m.uid}`);
+    const {error}=await SB.from('members').delete().eq('id',m.uid);
+    if(error)return fail(null,error);
+    await loadPublic();refreshLoginList();await refresh();
+  }finally{busy(false);}
+}
+
+/* ---------- profile ---------- */
+async function saveProfile(){
+  const m=member(SESSION.id),g=id=>document.getElementById(id).value.trim();
+  if(!g('pName')||!g('pPhone')||!g('pEmail')||!g('pCompany'))
+    return note('profMsg','err','Name, mobile, email and company are required.');
+  const dob=toISO(g('pDob')),mar=toISO(g('pMarriage'));
+  if(dob===null)return note('profMsg','err','Enter the Date of Birth as <b>dd/mm/yyyy</b>.');
+  if(dob&&dob>today())return note('profMsg','err','Date of Birth cannot be in the future.');
+  if(mar===null)return note('profMsg','err','Enter the Marriage Date as <b>dd/mm/yyyy</b>, or leave it blank.');
+  if(mar&&mar>today())return note('profMsg','err','Marriage Date cannot be in the future.');
+  if(mar&&dob&&mar<dob)return note('profMsg','err','Marriage Date cannot be earlier than the Date of Birth.');
+  busy(true);
+  try{
+    const {error}=await SB.from('members').update({
+      name:g('pName'),phone:g('pPhone'),contact_email:g('pEmail'),company:g('pCompany'),
+      vertical:g('pVertical'),blood_group:g('pBlood'),birthday:dob||null,
+      anniversary:mar||null,address:g('pAddr')}).eq('id',m.uid);
+    if(error)return fail('profMsg',error);
+    SESSION.name=g('pName');
+    await loadPublic();await refresh();
+    setTimeout(()=>note('profMsg','ok','Profile updated successfully.'),30);
+  }finally{busy(false);}
+}
+async function verifyCurrentPassword(pw){
+  const me=member(SESSION.id);
+  if(!me||!me.handle)return false;
+  const {error}=await SB.auth.signInWithPassword({email:me.handle,password:pw});
+  return !error;
+}
+async function changePw(){
+  const o=document.getElementById('pwOld').value;
+  const n=document.getElementById('pwNew').value,n2=document.getElementById('pwNew2').value;
+  if(!o)return note('pwMsg','err','Enter your current password.');
+  if(!n||!n2)return note('pwMsg','err','Enter and confirm your new password.');
+  if(!await verifyCurrentPassword(o))return note('pwMsg','err','Current password is incorrect.');
+  if(n.length<6)return note('pwMsg','err','New password must be at least 6 characters.');
+  if(n!==n2)return note('pwMsg','err','New passwords do not match.');
+  busy(true);
+  try{
+    const {error}=await SB.auth.updateUser({password:n});
+    if(error)return fail('pwMsg',error);
+    ['pwOld','pwNew','pwNew2'].forEach(i=>{const e=document.getElementById(i);if(e)e.value='';});
+    note('pwMsg','ok','Password updated successfully.');
+  }finally{busy(false);}
+}
+async function pickProfilePhoto(inp){
+  const m=member(SESSION.id);
+  readPhoto(inp.files[0],async d=>{
+    busy(true);
+    try{
+      const {error}=await SB.from('members').update({photo_url:d}).eq('id',m.uid);
+      if(error)return fail('profMsg',error);
+      await refresh();setTimeout(()=>note('profMsg','ok','Profile photo updated.'),30);
+    }finally{busy(false);}
+  },msg=>note('profMsg','err',msg));
+  inp.value='';
+}
+async function removeProfilePhoto(){
+  const m=member(SESSION.id);
+  if(!confirm('Remove your profile photo?'))return;
+  busy(true);
+  try{
+    const {error}=await SB.from('members').update({photo_url:null}).eq('id',m.uid);
+    if(error)return fail('profMsg',error);
+    await refresh();setTimeout(()=>note('profMsg','ok','Profile photo removed.'),30);
+  }finally{busy(false);}
+}
+
+/* ---------- referrals ---------- */
+async function submitReferral(){
+  if(BUSY)return;
+  const to=document.getElementById('refTo').value,desc=document.getElementById('refDesc').value.trim();
+  if(!to)return note('refMsg','err','Please select the member you want to refer this business to.');
+  if(!desc)return note('refMsg','err','Please enter a referral description.');
+  if(desc.length<10)return note('refMsg','err','Please give a slightly more detailed description (at least 10 characters).');
+  busy(true);
+  try{
+    const {error}=await SB.from('referrals').insert({
+      from_member_id:uidOf(SESSION.id),to_member_id:uidOf(to),notes:desc,
+      contact_name:document.getElementById('refClient').value.trim()||null,
+      contact_phone:document.getElementById('refContact').value.trim()||null,
+      estimated_value:Number(document.getElementById('refEst').value)||0,
+      status:'open',converted_value:0});
+    if(error)return fail('refMsg',error);
+    const name=mname(to);
+    await refresh();
+    setTimeout(()=>note('refMsg','ok','Referral sent to <b>'+esc(name)+'</b>. Your total referrals given is now <b>'+stats(SESSION.id).given+'</b>.'),30);
+    window.scrollTo(0,0);
+  }finally{busy(false);}
+}
+async function saveReply(id){
+  const r=DB.referrals.find(x=>x.id===id);if(!r)return;
+  const st=document.getElementById('rpStatus').value;
+  if(!st)return note('replyMsg','err','Please select an outcome.');
+  let val=0;
+  if(st==='converted'){
+    val=Number(document.getElementById('rpValue').value);
+    if(!val||val<=0)return note('replyMsg','err','Enter the converted business value (greater than 0).');
+  }
+  busy(true);
+  try{
+    const {error}=await SB.from('referrals').update({
+      status:st,converted_value:val,
+      thank_you_note:document.getElementById('rpNote').value.trim()||null,
+      acknowledged:true,acknowledged_at:new Date().toISOString(),
+      closed_at:new Date().toISOString()}).eq('id',r.uid);
+    if(error)return fail('replyMsg',error);
+    closeModal();await refresh();
+  }finally{busy(false);}
+}
+async function delReferral(id){
+  const r=DB.referrals.find(x=>x.id===id);if(!r)return;
+  if(!confirm('Delete referral '+id+'? This cannot be undone.'))return;
+  busy(true);
+  try{
+    const {error}=await SB.from('referrals').delete().eq('id',r.uid);
+    if(error)return fail(null,error);
+    await refresh();
+  }finally{busy(false);}
+}
+
+/* ---------- R2R ---------- */
+async function submitR2R(){
+  if(BUSY)return;
+  const g=id=>document.getElementById(id).value.trim();
+  const w=g('xWith'),l=g('xLoc'),b=g('xBen'),d=toISO(g('xDate'));
+  if(!w)return note('x2Msg','err','Please select the member you met.');
+  if(d===null)return note('x2Msg','err','Enter the meeting date as <b>dd/mm/yyyy</b> — for example '+dmy(today())+'.');
+  if(!d)return note('x2Msg','err','Please enter the date of the meeting.');
+  if(d>today())return note('x2Msg','err','The meeting date cannot be in the future.');
+  if(!l)return note('x2Msg','err','Please enter the meeting location.');
+  if(!b||b.length<5)return note('x2Msg','err','Please enter the benefit of the meet.');
+  const dupe=DB.r2r.find(x=>x.date===d&&((x.aId===SESSION.id&&x.bId===w)||(x.aId===w&&x.bId===SESSION.id)));
+  if(dupe)return note('x2Msg','err','A meeting with '+esc(mname(w))+' on '+dmy(d)+' is already recorded ('+dupe.id+').');
+  busy(true);
+  try{
+    const {error}=await SB.from('r2r_meetings').insert({
+      member_a_id:uidOf(SESSION.id),member_b_id:uidOf(w),meeting_date:d,
+      location:l,benefit:b,posted_by_id:uidOf(SESSION.id),accepted:true,
+      accepted_at:new Date().toISOString()});
+    if(error)return fail('x2Msg',error);
+    const name=mname(w);
+    await refresh();
+    setTimeout(()=>note('x2Msg','ok','R2R meeting with <b>'+esc(name)+'</b> saved. It is now counted for both members — your total is <b>'+myR2R(SESSION.id).length+'</b>.'),30);
+  }finally{busy(false);}
+}
+async function delR2R(id){
+  const x=DB.r2r.find(y=>y.id===id);if(!x)return;
+  if(SESSION.role!=='admin'&&x.loggedBy!==SESSION.id)return;
+  if(!confirm('Delete R2R meeting '+id+"? It will be removed from both members' counts."))return;
+  busy(true);
+  try{
+    const {error}=await SB.from('r2r_meetings').delete().eq('id',x.uid);
+    if(error)return fail(null,error);
+    await refresh();
+  }finally{busy(false);}
+}
+
+/* ---------- verticals ---------- */
+async function addVert(){
+  const v=document.getElementById('vtNew').value.trim();
+  if(!v)return note('vtMsg','err','Enter a vertical name.');
+  if(v.length<3)return note('vtMsg','err','Vertical name is too short.');
+  if(DB.verticals.some(x=>x.toLowerCase()===v.toLowerCase()))
+    return note('vtMsg','err','“'+esc(v)+'” already exists in the list.');
+  busy(true);
+  try{
+    const {error}=await SB.from('verticals').insert({name:v,sort_order:10});
+    if(error)return fail('vtMsg',error);
+    await refresh();refreshVerticalPickers();
+    setTimeout(()=>note('vtMsg','ok','Vertical “'+esc(v)+'” added.'),30);
+  }finally{busy(false);}
+}
+async function renameVert(old){
+  const v=prompt('Rename business vertical:\n\nEvery member currently in this vertical will be updated.',old);
+  if(v===null)return;
+  const nv=v.trim();
+  if(!nv)return alert('Vertical name cannot be blank.');
+  if(nv===old)return;
+  if(DB.verticals.some(x=>x.toLowerCase()===nv.toLowerCase()))return alert('“'+nv+'” already exists in the list.');
+  const row=VERT_ROWS.find(r=>r.name===old);if(!row)return;
+  busy(true);
+  try{
+    const {error}=await SB.from('verticals').update({name:nv}).eq('id',row.id);
+    if(error)return fail('vtMsg',error);
+    const {error:e2}=await SB.from('members').update({vertical:nv}).eq('vertical',old);
+    if(e2)return fail('vtMsg',e2);
+    await refresh();refreshVerticalPickers();
+    setTimeout(()=>note('vtMsg','ok','Renamed to “'+esc(nv)+'”.'),30);
+  }finally{busy(false);}
+}
+async function delVert(v){
+  const n=vertUse(v);
+  if(n)return alert('“'+v+'” cannot be deleted — '+n+' member'+(n===1?' is':'s are')+' using it.\n\nOpen All Members, change their vertical, then delete this one.');
+  if(DB.verticals.length<=1)return alert('At least one vertical must remain in the list.');
+  if(!confirm('Delete the vertical “'+v+'”?'))return;
+  const row=VERT_ROWS.find(r=>r.name===v);if(!row)return;
+  busy(true);
+  try{
+    const {error}=await SB.from('verticals').delete().eq('id',row.id);
+    if(error)return fail('vtMsg',error);
+    await refresh();refreshVerticalPickers();
+  }finally{busy(false);}
+}
+async function restoreVerts(){
+  const missing=DEFAULT_VERTICALS.filter(v=>!DB.verticals.some(x=>x.toLowerCase()===v.toLowerCase()));
+  if(!missing.length)return note('vtMsg','ok','Nothing to restore — all defaults are already present.');
+  if(!confirm('Add '+missing.length+' missing default vertical(s) back to the list?'))return;
+  busy(true);
+  try{
+    const {error}=await SB.from('verticals').insert(missing.map(name=>({name,sort_order:10})));
+    if(error)return fail('vtMsg',error);
+    await refresh();refreshVerticalPickers();
+    setTimeout(()=>note('vtMsg','ok',missing.length+' default vertical(s) restored.'),30);
+  }finally{busy(false);}
+}
+
+/* ---------- settings: admin password only (username is the login handle) ---------- */
+async function saveAdmin(){
+  const o=document.getElementById('adOld').value;
+  const n=document.getElementById('adNew').value,n2=document.getElementById('adNew2').value;
+  if(!o)return note('adMsg','err','Enter your current password.');
+  if(!n)return note('adMsg','err','Enter a new password.');
+  if(!await verifyCurrentPassword(o))return note('adMsg','err','Current password is incorrect.');
+  if(n.length<6)return note('adMsg','err','New password must be at least 6 characters.');
+  if(n!==n2)return note('adMsg','err','New passwords do not match.');
+  busy(true);
+  try{
+    const {error}=await SB.auth.updateUser({password:n});
+    if(error)return fail('adMsg',error);
+    ['adOld','adNew','adNew2'].forEach(i=>{const e=document.getElementById(i);if(e)e.value='';});
+    note('adMsg','ok','Administrator password updated.');
+  }finally{busy(false);}
+}
+
+/* ---------- data that now lives in Supabase ---------- */
+function backup(){exportMembers();exportReferrals();exportR2R();exportSummary();}
+function restore(inp){alert('Data now lives in your Supabase database, which is backed up by Supabase itself.\n\nUse the CSV exports on the Reports page for your own copies.');if(inp)inp.value='';}
+function wipe(){alert('Bulk deletion is disabled on the live database.\n\nDelete individual members or records from the admin pages instead.');}
+function loadDemo(){alert('Sample data is disabled on the live database so your real records stay clean.');}
+
+/* =========================== BOOT =========================== */
+DB=blank();
+fillSelect(document.getElementById('rBlood'),BLOOD,'-- Select blood group --');
+paintRegPhoto();
+resetLoginFields();
+
+(async function boot(){
+  try{
+    await loadPublic();
+    refreshLoginList();refreshVerticalPickers();
+    const {data:{session}}=await SB.auth.getSession();
+    if(session){
+      if(await startSession('mLoginMsg'))enterApp();
+    }
+  }catch(e){
+    note('mLoginMsg','err','Could not reach the database. Check your internet connection and reload. ('+esc(e.message||e)+')');
+  }
+})();
+</script>
+</body>
+</html>
