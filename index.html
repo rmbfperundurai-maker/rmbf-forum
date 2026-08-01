@@ -2587,10 +2587,23 @@ async function submitRoll(){
     if(!data || data.ok !== true) return fail('rollMsg', (data&&data.error)||'Could not save.');
     ROLL.absent.clear();
     await refresh();
+
+    // Send anything the roll just queued. Failures are not fatal — the
+    // notices stay pending and can be flushed from the button below.
+    let mailed = '';
+    if(data.notices_queued){
+      try{
+        const r = await SB.functions.invoke('send-attendance-notices',{body:{}});
+        if(r.data && r.data.ok) mailed = ` ${r.data.sent} email(s) sent.`;
+        else mailed = ' Emails could not be sent — use “Send pending emails”.';
+      }catch(e){ mailed = ' Emails could not be sent — use “Send pending emails”.'; }
+    }
+
     setTimeout(()=>note('rollMsg','ok',
       `Attendance saved — ${data.present} present, ${data.absent} absent.`
       + (data.notices_queued ? ` ${data.notices_queued} notice(s) queued.` : '')
-      + (data.rejoining_fees ? ` <b>${data.rejoining_fees} rejoining fee(s) due.</b>` : '')), 40);
+      + (data.rejoining_fees ? ` <b>${data.rejoining_fees} rejoining fee(s) due.</b>` : '')
+      + mailed), 40);
   } finally { busy(false); }
 }
 
@@ -2607,10 +2620,13 @@ function vAttReport(){
 
   return `
   <div class="page-head"><div><h2>Attendance Report</h2><p>${termName(term)}</p></div>
+    <div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap">
+    <button class="btn ghost" onclick="flushEmails()">✉ Send pending emails</button>
     <div style="min-width:170px"><label>Term</label>
       <select onchange="ATT_TERM=this.value;render()">
         ${allTerms().map(t=>`<option value="${t}"${t===term?' selected':''}>${termName(t)}</option>`).join('')}
-      </select></div></div>
+      </select></div></div></div>
+  <div id="mailMsg"></div>
 
   <div class="stats">
     <div class="stat b"><div class="lbl">Members Tracked</div><div class="val">${rows.length}</div></div>
@@ -2650,6 +2666,26 @@ function vAttReport(){
     </tr>`).join('')}</tbody></table>`
     : '<div class="empty">No attendance recorded for this term yet.</div>'}
   </div></div>`;
+}
+
+/* Sends anything still sitting in the notice queue. Safe to press twice —
+   a notice that has already gone out is no longer pending. */
+async function flushEmails(){
+  busy(true);
+  try{
+    const r = await SB.functions.invoke('send-attendance-notices',{body:{}});
+    if(r.error) return note('mailMsg','err','Could not send: '+esc(String(r.error.message||r.error)));
+    const d = r.data || {};
+    if(!d.ok) return note('mailMsg','err',esc(d.error||'Could not send.'));
+    if(!d.sent && !d.failed && !d.skipped)
+      return note('mailMsg','info','Nothing waiting to be sent.');
+    note('mailMsg','ok',
+      `${d.sent} email(s) sent.`
+      + (d.failed ? ` ${d.failed} failed.` : '')
+      + (d.skipped ? ` ${d.skipped} skipped — no email address on file.` : ''));
+  }catch(e){
+    note('mailMsg','err','Could not reach the mail service.');
+  }finally{ busy(false); }
 }
 
 async function reviewLeave(id, approve){
