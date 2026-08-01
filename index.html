@@ -123,6 +123,101 @@ tbody tr:hover{background:var(--gold-lt)}
 .celeb .d span{display:block;font-size:17px;font-weight:800;line-height:1}
 .celeb .d small{font-size:10px;text-transform:uppercase;letter-spacing:.5px}
 .celeb.today .d{background:var(--gold);color:#3A2A00}
+
+/* ===================== PHONE LAYOUT ===================== */
+@media(max-width:760px){
+  body{font-size:14.5px;-webkit-text-size-adjust:100%}
+  .brandbar{padding:8px 12px;gap:8px}
+  .brandlogo{height:34px}
+  .who{font-size:11px}
+  .who b{font-size:12.5px}
+
+  /* Navigation becomes a fixed bottom bar, like the app */
+  .nav{
+    position:fixed;left:0;right:0;bottom:0;top:auto;z-index:60;
+    background:#fff;border-top:1px solid var(--line);
+    box-shadow:0 -2px 14px rgba(23,69,143,.10);
+    padding:0;display:flex;overflow-x:auto;scrollbar-width:none;
+    -webkit-overflow-scrolling:touch;
+  }
+  .nav::-webkit-scrollbar{display:none}
+  .nav button{
+    flex:0 0 auto;min-width:76px;padding:9px 10px 8px;
+    color:var(--muted);background:transparent;border:none;border-bottom:none;
+    border-top:3px solid transparent;font-size:10.5px;font-weight:600;
+    display:flex;flex-direction:column;align-items:center;gap:3px;line-height:1.15;
+  }
+  .nav button::before{
+    content:attr(data-icon);font-size:19px;line-height:1;display:block;
+  }
+  .nav button.on{
+    color:var(--blue);background:var(--gold-lt);
+    border-top-color:var(--gold);border-bottom:none;
+  }
+  .nav .pill{position:absolute;margin:-6px 0 0 20px;font-size:10px;padding:0 5px}
+
+  main{padding:12px 12px 92px}          /* room for the bottom bar */
+  .foot{margin-bottom:78px;padding:16px}
+
+  .page-head{gap:10px;margin-bottom:12px}
+  .page-head h2{font-size:18px}
+  .page-head p{font-size:12.5px}
+
+  .card{border-radius:13px;margin-bottom:12px}
+  .card>h3{padding:12px 14px;font-size:14px}
+  .card-body{padding:13px}
+
+  .stats{grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
+  .stat{padding:12px 13px;border-radius:12px}
+  .stat .val{font-size:21px}
+  .stat .lbl{font-size:10px}
+  .stat .sub{font-size:10.5px}
+
+  /* Comfortable tap targets */
+  .btn{min-height:46px;padding:12px 18px;font-size:14.5px}
+  .btn.sm{min-height:38px;padding:8px 13px}
+  input,select,textarea{font-size:16px;padding:12px 13px}  /* 16px stops iOS zooming */
+  label{font-size:13px}
+
+  .toolbar{flex-direction:column;align-items:stretch;gap:10px}
+  .toolbar>div{min-width:0;width:100%}
+
+  /* Tables scroll sideways rather than squashing */
+  .tbl-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+  table{min-width:560px}
+  th,td{padding:10px 11px;font-size:12.5px}
+
+  .modal{max-height:92vh;border-radius:16px 16px 0 0;align-self:flex-end}
+  .overlay{padding:0;align-items:flex-end}
+  .modal-foot{position:sticky;bottom:0}
+
+  .kv{grid-template-columns:110px 1fr;font-size:12.5px}
+  .login-wrap{padding:20px 14px 40px}
+  .hero h1{font-size:21px}
+  .hero-logo{height:56px}
+  .celeb{padding:10px}
+}
+@media(max-width:400px){
+  .stats{grid-template-columns:1fr}
+  .nav button{min-width:68px;font-size:10px}
+}
+
+/* type-to-search picker */
+.picker{
+  position:absolute;left:0;right:0;top:calc(100% + 4px);z-index:70;
+  background:#fff;border:1px solid var(--line);border-radius:11px;
+  box-shadow:0 8px 26px rgba(23,69,143,.16);max-height:260px;overflow-y:auto;
+  -webkit-overflow-scrolling:touch;
+}
+.picker .row{
+  padding:11px 13px;border-bottom:1px solid var(--line);cursor:pointer;
+}
+.picker .row:last-child{border-bottom:none}
+.picker .row:active,.picker .row:hover{background:var(--gold-lt)}
+.picker .row b{font-size:14px;display:block;color:var(--ink)}
+.picker .row span{font-size:12px;color:var(--muted)}
+.picker .none{padding:14px;text-align:center;color:var(--muted);font-size:13px}
+
 /* password show/hide */
 .pw{position:relative}
 .pw input{padding-right:70px}
@@ -171,11 +266,15 @@ tbody tr:hover{background:var(--gold-lt)}
         <div class="grid" style="gap:14px">
           <div class="field">
             <label>Your Name or Business <span class="req">*</span></label>
-            <input id="loginMemberSel" list="memberOptions" autocomplete="off"
-                   placeholder="Type your name or business…"
-                   onkeydown="if(event.key==='Enter')memberLogin()">
-            <datalist id="memberOptions"></datalist>
-            <div class="hint">Start typing your name or business, then pick it from the list.</div>
+            <div style="position:relative">
+              <input id="loginMemberSel" autocomplete="off"
+                     placeholder="Type your name or business…"
+                     oninput="filterMembers(this.value)"
+                     onfocus="filterMembers(this.value)"
+                     onkeydown="if(event.key==='Enter'){hideMemberList();memberLogin();}">
+              <div id="memberList" class="picker hide"></div>
+            </div>
+            <div class="hint" id="loginHint">Start typing your name or business, then tap it in the list.</div>
           </div>
           <div class="field">
             <label>Password <span class="req">*</span></label>
@@ -293,9 +392,14 @@ tbody tr:hover{background:var(--gold-lt)}
             <textarea id="vAddress" style="min-height:70px"></textarea></div>
           <div class="field"><label>Who Invited You <span class="req">*</span></label>
             <select id="vInvitedBy"></select></div>
-          <div class="field"><label>Business Name <span class="req">*</span></label><input id="vCompany"></div>
+          <div class="field"><label>Business Name <span class="req">*</span></label>
+            <input id="vCompany" placeholder="e.g. Sri Balaji Textiles"></div>
           <div class="field" style="grid-column:1/-1"><label>Business Vertical <span class="req">*</span></label>
-            <select id="vVertical"></select></div>
+            <input id="vVertical" placeholder="e.g. Textiles, Interiors, Solar…">
+            <div class="hint">Type what line of business you are in.</div></div>
+          <div class="field" style="grid-column:1/-1"><label>Feedback / Note</label>
+            <textarea id="vFeedback" style="min-height:80px"
+              placeholder="How did you find the meeting? Anything you would like to tell us."></textarea></div>
         </div>
         <label style="display:flex;align-items:center;gap:11px;margin-top:18px;padding:13px;
                       border:1px solid var(--gold-mid);border-radius:11px;background:var(--gold-lt);font-weight:400">
@@ -2357,6 +2461,7 @@ async function syncExtras(){
     id: r.id, name: r.name || '', phone: r.phone || '', address: r.address || '',
     company: r.company || '', vertical: r.vertical || '',
     invitedBy: r.invited_by_name || '', willing: r.willing_to_join === true,
+    feedback: r.notes || '',
     week: r.week_label || '', photo: r.visit_photo_url || '',
     note: r.eligibility_note || '', done: r.review_completed === true,
     createdAt: isoDate(r.created_at)
@@ -2441,13 +2546,20 @@ function buildNav(){
     items.push(['profile','My Profile']);
   }
 
+  const ICONS = {
+    dash:'\u25A6', refer:'\u2197', inbox:'\u2199', sent:'\u2197', r2r:'\u{1F91D}',
+    myatt:'\u2713', roll:'\u{1F4CB}', attreport:'\u{1F4CA}', visitors:'\u{1F464}',
+    accounts:'\u20B9', posts:'\u2605', dir:'\u{1F465}', celeb:'\u{1F382}',
+    profile:'\u{1F464}', approvals:'\u2713', members:'\u{1F465}', allref:'\u2194',
+    allr2r:'\u{1F91D}', reports:'\u{1F4C8}', verticals:'\u{1F5C2}', settings:'\u2699'
+  };
   nav.innerHTML = items.map(([k,l]) => {
     let pill = '';
     if(k === 'approvals'){ const n = DB.members.filter(m => m.status === 'pending').length; if(n) pill = `<span class="pill">${n}</span>`; }
     if(k === 'inbox'){ const n = DB.referrals.filter(r => r.toId === SESSION.id && r.status === 'pending').length; if(n) pill = `<span class="pill">${n}</span>`; }
     if(k === 'roll'){ const done = ATT.some(a => a.date === lastTuesday()); if(!done) pill = '<span class="pill">!</span>'; }
     if(k === 'visitors'){ const n = VIS.filter(v => v.willing && !v.done).length; if(n) pill = `<span class="pill">${n}</span>`; }
-    return `<button class="${CUR===k?'on':''}" onclick="go('${k}')">${l}${pill}</button>`;
+    return `<button class="${CUR===k?'on':''}" data-icon="${ICONS[k]||'\u2022'}" onclick="go('${k}')">${l}${pill}</button>`;
   }).join('');
 }
 
@@ -2859,6 +2971,7 @@ function visitorCard(v){
         <div class="hint">${esc(v.phone)} · invited by ${esc(v.invitedBy)}</div></div>
       <span class="tag conv">Interested</span>
     </div>
+    ${v.feedback ? `<div class="quote"><b>Their feedback:</b> ${esc(v.feedback)}</div>` : ''}
     ${v.note ? `<div class="quote">${esc(v.note)}</div>` : ''}
     ${v.photo ? `<img src="${v.photo}" style="max-height:140px;border-radius:9px;margin-top:8px">` : ''}
     <div style="margin-top:10px"><button class="btn gold sm" onclick="openVisit('${v.id}')">
@@ -2879,6 +2992,7 @@ function openVisit(id){
         <div class="k">Phone</div><div>${esc(v.phone)}</div>
         <div class="k">Address</div><div>${esc(v.address)}</div>
         <div class="k">Invited by</div><div>${esc(v.invitedBy)}</div>
+        ${v.feedback ? `<div class="k">Their feedback</div><div>${esc(v.feedback)}</div>` : ''}
       </div>
       <div class="field" style="margin:14px 0"><label>Photo from the visit</label>
         <input type="file" id="visitPhoto" accept="image/*"></div>
@@ -3199,7 +3313,6 @@ function showVisitor(){
   const sel = document.getElementById('vInvitedBy');
   sel.innerHTML = '<option value="">-- Select member --</option>'
     + LOGIN_DIR.map(m => `<option value="${esc(m.id)}">${esc(m.name)}${m.company?' — '+esc(m.company):''}</option>`).join('');
-  fillSelect(document.getElementById('vVertical'), verts(), '-- Select vertical --');
   window.scrollTo(0,0);
 }
 function hideVisitor(){
@@ -3222,12 +3335,13 @@ async function submitVisitor(){
     const {data,error} = await SB.rpc('register_visitor',{
       p_name:g('vName'), p_phone:g('vPhone'), p_address:g('vAddress'),
       p_invited_by_id:g('vInvitedBy'), p_company:g('vCompany'), p_vertical:g('vVertical'),
-      p_willing:document.getElementById('vWilling').checked, p_email:null, p_notes:null});
+      p_willing:document.getElementById('vWilling').checked, p_email:null,
+      p_notes:g('vFeedback') || null});
     if(error) return fail('visMsg', error);
     if(!data || data.ok !== true) return fail('visMsg',(data&&data.error)||'Could not submit.');
-    ['vName','vPhone','vAddress','vCompany'].forEach(i=>document.getElementById(i).value='');
+    ['vName','vPhone','vAddress','vCompany','vVertical','vFeedback']
+      .forEach(i=>document.getElementById(i).value='');
     document.getElementById('vInvitedBy').value = '';
-    document.getElementById('vVertical').value = '';
     note('visMsg','ok','Thank you. Your details have been recorded — '
       + 'someone from RMBF Perundurai will be in touch.');
     window.scrollTo(0,0);
@@ -3237,17 +3351,57 @@ async function submitVisitor(){
 /* =========================================================
    LOGIN: type to search by name or business
    ========================================================= */
+let PICKED = null;
+
 function refreshLoginList(){
   const sel = document.getElementById('loginMemberSel');
   if(!sel) return;
-  const list = document.getElementById('memberOptions');
-  if(list){
-    list.innerHTML = LOGIN_DIR
-      .slice().sort((a,b)=>String(a.name).localeCompare(String(b.name)))
-      .map(m => `<option value="${esc(m.name)}${m.company?' — '+esc(m.company):''}">`).join('');
-  }
   sel.placeholder = LOGIN_DIR.length ? 'Type your name or business…' : 'No approved members yet';
 }
+
+/* Shows members whose name or business contains what has been typed. */
+function filterMembers(q){
+  const box = document.getElementById('memberList');
+  if(!box) return;
+  PICKED = null;
+  const t = String(q||'').trim().toLowerCase();
+  const list = LOGIN_DIR.slice()
+    .sort((a,b)=>String(a.name).localeCompare(String(b.name)))
+    .filter(m => !t
+      || String(m.name).toLowerCase().includes(t)
+      || String(m.company||'').toLowerCase().includes(t));
+
+  if(!LOGIN_DIR.length){ box.classList.add('hide'); return; }
+  box.innerHTML = list.length
+    ? list.slice(0,40).map(m =>
+        `<div class="row" onclick="pickMember('${esc(m.login_handle)}',this)">
+           <b>${esc(m.name)}</b>${m.company?`<span>${esc(m.company)}</span>`:''}
+         </div>`).join('')
+    : '<div class="none">No member matches that</div>';
+  box.classList.remove('hide');
+}
+
+function pickMember(handle, el){
+  PICKED = handle;
+  const name = el.querySelector('b').textContent;
+  const co = el.querySelector('span');
+  document.getElementById('loginMemberSel').value = name + (co ? ' — ' + co.textContent : '');
+  hideMemberList();
+  const hint = document.getElementById('loginHint');
+  if(hint){ hint.textContent = 'Name selected. Now enter your password.'; hint.style.color = 'var(--green)'; }
+  const pw = document.getElementById('loginMemberPass');
+  if(pw) pw.focus();
+}
+
+function hideMemberList(){
+  const box = document.getElementById('memberList');
+  if(box) box.classList.add('hide');
+}
+
+/* Tapping outside closes the list. */
+document.addEventListener('click', e => {
+  if(!e.target.closest('#memberList') && e.target.id !== 'loginMemberSel') hideMemberList();
+});
 
 function handleFor(typed){
   const t = String(typed||'').trim().toLowerCase();
@@ -3265,9 +3419,9 @@ async function memberLogin(){
   if(BUSY) return; clearNote('mLoginMsg');
   const typed = document.getElementById('loginMemberSel').value;
   const pw = document.getElementById('loginMemberPass').value;
-  const handle = handleFor(typed);
+  const handle = PICKED || handleFor(typed);
   if(!handle) return note('mLoginMsg','err',
-    'Type your name and choose it from the list that appears.');
+    'Type your name and tap it in the list that appears.');
   if(!pw) return note('mLoginMsg','err','Please enter your password.');
   busy(true);
   try{
