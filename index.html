@@ -253,9 +253,19 @@ tbody tr:hover{background:var(--gold-lt)}
       <h1>RMBF Business Forum</h1>
       <p>Referral &amp; Business Exchange Portal</p>
     </div>
-    <div class="tabs">
-      <button class="tab on" id="tabMember" onclick="showTab('member')">Member Login</button>
-      <button class="tab" id="tabAdmin" onclick="showTab('admin')">Admin Login</button>
+    <div class="card" style="margin-bottom:14px">
+      <div class="card-body" style="padding-top:16px">
+        <div class="field" style="margin:0">
+          <label>Your Chapter <span class="req">*</span></label>
+          <select id="loginChapter" onchange="pickChapter(this.value)">
+            <option value="">Loading chapters…</option>
+          </select>
+          <div class="hint" id="loginTrial" style="margin-top:7px"></div>
+        </div>
+        <div style="margin-top:12px">
+          <a href="#" onclick="showChapterSignup();return false"><b>+ Start a new chapter →</b></a>
+        </div>
+      </div>
     </div>
 
     <!-- Member login -->
@@ -297,33 +307,6 @@ tbody tr:hover{background:var(--gold-lt)}
         </div>
       </div>
     </div>
-
-    <!-- Admin login -->
-    <div class="card hide" id="paneAdmin">
-      <h3>Administrator Sign In</h3>
-      <div class="card-body">
-        <div id="aLoginMsg"></div>
-        <div class="grid" style="gap:14px">
-          <div class="field">
-            <label>Admin Username <span class="req">*</span></label>
-            <input id="loginAdminUser" value="admin" placeholder="admin" autocomplete="off">
-          </div>
-          <div class="field">
-            <label>Password <span class="req">*</span></label>
-            <div class="pw">
-              <input type="password" id="loginAdminPass" placeholder="Enter admin password"
-                     onkeydown="if(event.key==='Enter')adminLogin()">
-              <button type="button" class="eye" onclick="togglePw('loginAdminPass',this)">Show</button>
-            </div>
-          </div>
-          <button class="btn" onclick="adminLogin()">Login as Admin</button>
-        </div>
-        <div class="msg info" style="margin:16px 0 0">
-          Administrator access only. Change your password from <b>Settings</b> after your first sign-in.
-        </div>
-      </div>
-    </div>
-  </div>
 
   <!-- Registration -->
   <div class="login-box regbox hide" id="registerBox">
@@ -373,6 +356,56 @@ tbody tr:hover{background:var(--gold-lt)}
     </div>
   </div>
 </div>
+
+  <!-- New chapter sign-up -->
+  <div class="login-box regbox hide" id="chapterBox">
+    <div class="hero">
+      <h1>Start a New Chapter</h1>
+      <p>Register your chapter and become its founding chairman.</p>
+    </div>
+    <div class="card">
+      <h3>Chapter Details</h3>
+      <div class="card-body">
+        <div id="chapMsg"></div>
+        <div class="msg info" style="margin-top:0">
+          <b>30 days free, then ₹59 per member</b> — price includes tax.
+          Only the chairman handles payment; members never see a bill.
+        </div>
+        <div class="grid g2">
+          <div class="field"><label>Chapter Name <span class="req">*</span></label>
+            <input id="cName" placeholder="e.g. RMBF Erode United"></div>
+          <div class="field"><label>City <span class="req">*</span></label>
+            <input id="cCity" placeholder="e.g. Erode"></div>
+          <div class="field" style="grid-column:1/-1"><label>Meeting Venue</label>
+            <input id="cVenue" placeholder="Optional"></div>
+        </div>
+        <h3 style="margin-top:22px;border-top:1px solid var(--line);padding-top:18px">Founding Chairman</h3>
+        <div class="hint" style="margin-bottom:14px">You will be the chairman, with full rights over the
+          chapter. You can hand over to someone else later.</div>
+        <div class="grid g2">
+          <div class="field"><label>Your Full Name <span class="req">*</span></label>
+            <input id="cChair" placeholder="e.g. Rtn. Inbaraj K"></div>
+          <div class="field"><label>Mobile Number <span class="req">*</span></label>
+            <input id="cPhone" maxlength="15"></div>
+          <div class="field"><label>Email ID <span class="req">*</span></label>
+            <input id="cEmail" type="email" placeholder="name@example.com">
+            <div class="hint">Attendance reminders and notices are sent here.</div></div>
+          <div class="field"><label>Your Business</label>
+            <input id="cCompany" placeholder="Optional"></div>
+          <div class="field"><label>Create Password <span class="req">*</span></label>
+            <div class="pw"><input id="cPass" type="password" placeholder="Minimum 6 characters">
+              <button type="button" class="eye" onclick="togglePw('cPass',this)">Show</button></div></div>
+          <div class="field"><label>Confirm Password <span class="req">*</span></label>
+            <div class="pw"><input id="cPass2" type="password" placeholder="Re-enter password">
+              <button type="button" class="eye" onclick="togglePw('cPass2',this)">Show</button></div></div>
+        </div>
+        <div style="display:flex;gap:10px;margin-top:20px;flex-wrap:wrap">
+          <button class="btn" onclick="submitChapter()">Create Chapter &amp; Start Trial</button>
+          <button class="btn ghost" onclick="hideChapterSignup()">Back to Login</button>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <!-- Visitor registration -->
   <div class="login-box hide" id="visitorBox">
@@ -3569,6 +3602,767 @@ vMemberDash = function(){
   return banner + _vMemberDash();
 };
 
+
+/* =========================================================================
+   V3 MODULE — chapters, trial, Rotary ID, charter chairman,
+   mega directory, soft removal, ranged reports
+   Later declarations win, so everything here overrides the code above.
+   ========================================================================= */
+
+let CHAPTERS = [], CHAPTER = null, MEGA = [], SUBSCRIPTION = null;
+
+/* ---------- roles ---------- */
+POSTS.cc = ['Charter Chairman',
+  'The chapter’s founding chairman. Full access to everything, including appointing office bearers.'];
+POSTS.vc[1] = 'Full access to everything, except appointing office bearers and handing over the chairmanship.';
+delete POSTS.chairman;   /* the chairmanship passes by handover, not appointment */
+
+roleTag = function(role){
+  return ({admin:'Administrator', chairman:'Chairman', cc:'Charter Chairman',
+           vc:'Vice Chairman', secretary:'Secretary',
+           ac:'Attendance Coordinator', rc:'Referral Coordinator',
+           ard:'Application Review Director'})[role] || '';
+}
+isBoss = function(){ return hasRole(['admin','chairman','cc','vc']); }
+function isChairman(){ return hasRole(['admin','chairman']); }
+function canAppoint(){ return hasRole(['admin','chairman','cc']); }
+isSuperAdmin = function(){ return hasRole(['admin','chairman','cc']); }
+
+/* ---------- row mapper: carry the new columns ---------- */
+const _mapMember = mapMember;
+mapMember = function(r){
+  const m = _mapMember(r);
+  m.rotaryId = r.rotary_id || '';
+  m.chapterId = r.chapter_id || '';
+  m.isActive = r.is_active !== false;
+  m.removedAt = isoDate(r.removed_at);
+  m.removalReason = r.removal_reason || '';
+  /* What we show on screen: their Rotary ID when they have set one. */
+  m.code = m.rotaryId || m.id;
+  return m;
+}
+
+/* ---------- the admin tab is gone; these keep old callers harmless ---------- */
+showTab = function(){ /* single sign-in pane now */ }
+adminLogin = async function(){ return memberLogin(); }
+resetLoginFields = function(){
+  ['loginMemberPass','rPass','rPass2','cPass','cPass2'].forEach(id => {
+    const e = document.getElementById(id); if(e){ e.value=''; e.type='password'; }
+  });
+  document.querySelectorAll('.eye').forEach(b => b.textContent = 'Show');
+  const sel = document.getElementById('loginMemberSel');
+  if(sel) sel.value = '';
+  PICKED = null;
+  ['mLoginMsg','regMsg','chapMsg'].forEach(id => { const e=document.getElementById(id); if(e) e.innerHTML=''; });
+  const hint = document.getElementById('loginHint');
+  if(hint){ hint.textContent = 'Start typing your name or business, then tap it in the list.';
+            hint.style.color = ''; }
+}
+
+/* ---------- chapters ---------- */
+async function loadChapters(){
+  const {data,error} = await SB.from('chapter_directory').select('*');
+  if(error){ console.warn('chapters:', error.message); CHAPTERS = []; return; }
+  /* A chapter only appears once it has registered a chairman. */
+  CHAPTERS = (data||[]).filter(c => c.has_chairman)
+                       .sort((a,b)=>String(a.name).localeCompare(String(b.name)));
+  if(CHAPTER) CHAPTER = CHAPTERS.find(c => c.id === CHAPTER.id) || CHAPTER;
+  else if(CHAPTERS.length === 1) CHAPTER = CHAPTERS[0];
+}
+
+function chapterLabel(c){ return c.city ? c.name + ' · ' + c.city : c.name; }
+
+function paintChapterPicker(){
+  const sel = document.getElementById('loginChapter');
+  if(!sel) return;
+  sel.innerHTML = CHAPTERS.length
+    ? '<option value="">-- Select your chapter --</option>' +
+      CHAPTERS.map(c=>`<option value="${esc(c.id)}"${CHAPTER&&CHAPTER.id===c.id?' selected':''}>${esc(chapterLabel(c))}</option>`).join('')
+    : '<option value="">Loading chapters…</option>';
+  paintTrialLine();
+}
+
+function paintTrialLine(){
+  const el = document.getElementById('loginTrial');
+  if(!el) return;
+  if(!CHAPTER){ el.innerHTML = ''; return; }
+  const days = Number(CHAPTER.trial_days_left)||0;
+  if(CHAPTER.plan === 'active'){
+    el.innerHTML = `<span style="color:var(--muted)">Subscription active · ${CHAPTER.member_count} members</span>`;
+  } else if(days <= 0){
+    el.innerHTML = `<span style="color:var(--red)">Trial has ended — the chairman needs to renew.</span>`;
+  } else {
+    el.innerHTML = `<span style="color:var(--muted)">Trial version — ${days} day${days===1?'':'s'} left</span>`;
+  }
+}
+
+function pickChapter(id){
+  CHAPTER = CHAPTERS.find(c => c.id === id) || null;
+  PICKED = null;
+  const sel = document.getElementById('loginMemberSel');
+  if(sel) sel.value = '';
+  hideMemberList();
+  paintTrialLine();
+  refreshLoginList();
+}
+
+/* Only members of the chosen chapter are offered. */
+function chapterDir(){
+  if(!CHAPTER) return [];
+  return LOGIN_DIR.filter(m => String(m.chapter_id) === String(CHAPTER.id));
+}
+
+refreshLoginList = function(){
+  const sel = document.getElementById('loginMemberSel');
+  if(!sel) return;
+  const n = chapterDir().length;
+  sel.placeholder = !CHAPTER ? 'Choose your chapter first…'
+                  : n ? 'Type your name or business…'
+                      : 'No approved members in this chapter yet';
+  sel.disabled = !CHAPTER;
+}
+
+filterMembers = function(q){
+  const box = document.getElementById('memberList');
+  if(!box) return;
+  PICKED = null;
+  const dir = chapterDir();
+  if(!CHAPTER || !dir.length){ box.classList.add('hide'); return; }
+  const t = String(q||'').trim().toLowerCase();
+  const list = dir.slice()
+    .sort((a,b)=>String(a.name).localeCompare(String(b.name)))
+    .filter(m => !t
+      || String(m.name).toLowerCase().includes(t)
+      || String(m.company||'').toLowerCase().includes(t));
+  box.innerHTML = list.length
+    ? list.slice(0,40).map(m =>
+        `<div class="row" onclick="pickMember('${esc(m.login_handle)}',this)">
+           <b>${esc(m.name)}</b>${m.company?`<span>${esc(m.company)}</span>`:''}
+         </div>`).join('')
+    : '<div class="none">No member matches that</div>';
+  box.classList.remove('hide');
+}
+
+handleFor = function(typed){
+  const t = String(typed||'').trim().toLowerCase();
+  if(!t) return null;
+  const dir = chapterDir();
+  for(const m of dir){
+    const full = (m.name + (m.company ? ' — ' + m.company : '')).toLowerCase();
+    if(full === t || String(m.name).toLowerCase() === t) return m.login_handle;
+  }
+  const hits = dir.filter(m =>
+    String(m.name).toLowerCase().includes(t) || String(m.company||'').toLowerCase().includes(t));
+  return hits.length === 1 ? hits[0].login_handle : null;
+}
+
+memberLogin = async function(){
+  if(BUSY) return; clearNote('mLoginMsg');
+  if(!CHAPTER) return note('mLoginMsg','err','Choose your chapter first.');
+  const typed = document.getElementById('loginMemberSel').value;
+  const pw = document.getElementById('loginMemberPass').value;
+  const handle = PICKED || handleFor(typed);
+  if(!handle) return note('mLoginMsg','err','Type your name and tap it in the list that appears.');
+  if(!pw) return note('mLoginMsg','err','Please enter your password.');
+  busy(true);
+  try{
+    if(await signIn(handle, pw, 'mLoginMsg') && await startSession('mLoginMsg')){
+      document.getElementById('loginMemberPass').value = '';
+      enterApp();
+    }
+  } finally { busy(false); }
+}
+
+/* ---------- new chapter sign-up ---------- */
+function showChapterSignup(){
+  document.getElementById('loginBox').classList.add('hide');
+  document.getElementById('registerBox').classList.add('hide');
+  document.getElementById('chapterBox').classList.remove('hide');
+  window.scrollTo(0,0);
+}
+function hideChapterSignup(){
+  document.getElementById('chapterBox').classList.add('hide');
+  document.getElementById('loginBox').classList.remove('hide');
+  window.scrollTo(0,0);
+}
+
+async function submitChapter(){
+  if(BUSY) return;
+  const g = id => { const e = document.getElementById(id); return e ? e.value.trim() : ''; };
+  const d = {chapter:g('cName'), city:g('cCity'), venue:g('cVenue'), name:g('cChair'),
+             phone:g('cPhone'), email:g('cEmail'), company:g('cCompany'),
+             p1:g('cPass'), p2:g('cPass2')};
+  const miss = [];
+  if(!d.chapter) miss.push('chapter name');
+  if(!d.city) miss.push('city');
+  if(!d.name) miss.push('your name');
+  if(!d.phone) miss.push('mobile number');
+  if(!d.email) miss.push('email');
+  if(!d.p1) miss.push('password');
+  if(miss.length) return note('chapMsg','err','Please fill in your '+miss.join(', ')+'.');
+  if(!/^[^@\s]+@[^@\s]+\.[^@\s]{2,}$/.test(d.email)) return note('chapMsg','err','Enter a valid email address.');
+  if(d.p1.length < 6) return note('chapMsg','err','Password must be at least 6 characters.');
+  if(d.p1 !== d.p2) return note('chapMsg','err','Password and confirmation do not match.');
+
+  busy(true);
+  try{
+    const {data,error} = await SB.rpc('register_chapter',{
+      p_chapter_name:d.chapter, p_city:d.city, p_chairman_name:d.name,
+      p_phone:d.phone, p_email:d.email, p_password:d.p1,
+      p_company:d.company||null, p_meeting_venue:d.venue||null});
+    if(error) return fail('chapMsg', error);
+    if(!data || data.ok !== true) return fail('chapMsg',(data&&data.error)||'Could not create the chapter.');
+    await loadPublic();
+    CHAPTER = CHAPTERS.find(c => c.id === data.chapter_id) || null;
+    paintChapterPicker();
+    hideChapterSignup();
+    note('mLoginMsg','ok',
+      `<b>${esc(d.chapter)} is ready</b>, and you are its chairman. Your 30-day free trial has started — sign in below with your name and the password you just chose.`);
+  } finally { busy(false); }
+}
+
+/* ---------- public bootstrap now includes chapters ---------- */
+const _loadPublic = loadPublic;
+loadPublic = async function(){
+  await _loadPublic();
+  await loadChapters();
+  paintChapterPicker();
+}
+
+/* ---------- subscription ---------- */
+async function loadSubscription(){
+  const {data,error} = await SB.rpc('chapter_subscription');
+  if(error || !data){ SUBSCRIPTION = null; return; }
+  SUBSCRIPTION = data;
+}
+
+function trialBanner(){
+  const s = SUBSCRIPTION;
+  if(!s || s.plan === 'active') return '';
+  const days = Number(s.days_left)||0;
+  const urgent = s.expired || days <= 7;
+  return `<div class="msg ${urgent?'err':'info'}">
+    <b>${s.expired ? 'Free trial has ended' : 'Trial version — '+days+' day'+(days===1?'':'s')+' left'}</b>
+    &nbsp;${isChairman()
+      ? `${s.member_count} members · ${inr(s.monthly_total)} per month after the trial.
+         <span class="hint" style="display:inline">Payment opens when the app launches on the Play Store.</span>`
+      : 'Your chairman will arrange the subscription.'}
+  </div>`;
+}
+
+/* ---------- session: pick up chapter + subscription ---------- */
+const _startSession = startSession;
+startSession = async function(box){
+  const ok = await _startSession(box);
+  if(ok){ try{ await loadSubscription(); }catch(e){ SUBSCRIPTION = null; } }
+  return ok;
+}
+
+/* =========================================================
+   NAVIGATION — office bearers get the admin screens
+   ========================================================= */
+buildNav = function(){
+  const nav = document.getElementById('nav');
+  const items = [['dash','Dashboard']];
+
+  items.push(['refer','Give a Referral'], ['inbox','Referrals Received'],
+             ['sent','Referrals Given'], ['r2r','R2R Meetings'],
+             ['myatt','My Attendance']);
+
+  if(canTakeRoll())       items.push(['roll','Take Attendance'], ['attreport','Attendance Report']);
+  if(canReviewVisitors()) items.push(['visitors','Visitors']);
+  if(canSeeAccounts())    items.push(['accounts','Accounts']);
+  if(canFixReferrals() && !isBoss()) items.push(['allref','Referral Review']);
+
+  items.push(['dir','Member Directory'], ['mega','Mega Directory'],
+             ['ranged','Reports'], ['celeb','Birthdays & Anniversaries']);
+
+  if(isBoss()){
+    items.push(['approvals','Pending Approvals'], ['members','All Members'],
+               ['allref','All Referrals'], ['allr2r','All R2R Meetings'],
+               ['reports','Business Summary'], ['verticals','Business Verticals']);
+    if(canAppoint()) items.push(['posts','Office Bearers']);
+    if(isChairman()) items.push(['handover','Hand Over Chairmanship']);
+  }
+  items.push(['profile','My Profile']);
+
+  const ICONS = {
+    dash:'▦', refer:'↗', inbox:'↙', sent:'↗', r2r:'\u{1F91D}',
+    myatt:'✓', roll:'\u{1F4CB}', attreport:'\u{1F4CA}', visitors:'\u{1F464}',
+    accounts:'₹', posts:'★', dir:'\u{1F465}', mega:'\u{1F30F}',
+    ranged:'\u{1F4C8}', celeb:'\u{1F382}', profile:'\u{1F464}', approvals:'✓',
+    members:'\u{1F465}', allref:'↔', allr2r:'\u{1F91D}', reports:'\u{1F4C8}',
+    verticals:'\u{1F5C2}', handover:'\u{1F3C5}'
+  };
+  const seen = {};
+  nav.innerHTML = items.filter(([k]) => (seen[k] ? false : (seen[k]=1, true))).map(([k,l]) => {
+    let pill = '';
+    if(k === 'approvals'){ const n = DB.members.filter(m => m.status === 'pending').length; if(n) pill = `<span class="pill">${n}</span>`; }
+    if(k === 'inbox'){ const n = DB.referrals.filter(r => r.toId === SESSION.id && r.status === 'pending').length; if(n) pill = `<span class="pill">${n}</span>`; }
+    if(k === 'roll'){ const done = ATT.some(a => a.date === lastTuesday()); if(!done) pill = '<span class="pill">!</span>'; }
+    if(k === 'visitors'){ const n = VIS.filter(v => v.willing && !v.done).length; if(n) pill = `<span class="pill">${n}</span>`; }
+    return `<button class="${CUR===k?'on':''}" data-icon="${ICONS[k]||'•'}" onclick="go('${k}')">${l}${pill}</button>`;
+  }).join('');
+}
+
+view = function(){
+  switch(CUR){
+    case 'roll':       return vTakeRoll();
+    case 'attreport':  return vAttReport();
+    case 'myatt':      return vMyAttendance();
+    case 'visitors':   return vVisitors();
+    case 'accounts':   return vAccounts();
+    case 'posts':      return vPosts();
+    case 'mega':       return vMega();
+    case 'ranged':     return vRanged();
+    case 'handover':   return vHandover();
+    case 'refer':      return vRefer();
+    case 'inbox':      return vInbox();
+    case 'sent':       return vSent();
+    case 'r2r':        return vR2R();
+    case 'dir':        return vDirectory();
+    case 'celeb':      return vCeleb();
+    case 'profile':    return vProfile();
+  }
+  if(isBoss()){
+    switch(CUR){
+      case 'approvals': return vApprovals();
+      case 'members':   return vAllMembers();
+      case 'allref':    return vAllReferrals();
+      case 'allr2r':    return vAdminR2R();
+      case 'reports':   return vReports();
+      case 'verticals': return vVerticals();
+      case 'dash':      return vAdminDash();
+    }
+  }
+  if(CUR === 'allref') return vAllReferrals();
+  return vMemberDash();
+}
+
+/* =========================================================
+   OFFICE BEARERS — the chairman appoints; the post itself
+   passes by handover, so it gets its own card.
+   ========================================================= */
+vPosts = function(){
+  if(!canAppoint()) return '<div class="empty">Only the chairman can appoint office bearers.</div>';
+  const holderOf = role => DB.members.find(m => m.status==='approved' && m.isActive !== false && m.role === role);
+  const candidates = approved().filter(m => m.role !== 'admin' && m.role !== 'chairman' && m.isActive !== false);
+  const chair = holderOf('chairman') || holderOf('admin');
+
+  const chairCard = `<div class="card"><h3>Chairman</h3><div class="card-body">
+    <div class="hint" style="margin-bottom:12px">Full access to everything, including appointing office bearers and removing members.</div>
+    ${chair ? `<div style="display:flex;align-items:center;gap:11px;padding:11px;border-radius:11px;
+          background:var(--gold-lt);border:1px solid var(--gold-mid);margin-bottom:12px">
+        ${avatar(chair,44)}
+        <div style="flex:1"><b>${esc(chair.name)}</b><div class="hint">${esc(chair.company)}</div></div>
+      </div>` : ''}
+    <div class="msg info" style="margin:0 0 12px">The chairmanship is not appointed here. It passes on through a
+      handover, and the outgoing chairman becomes an ordinary member at that moment.</div>
+    ${isChairman() ? `<button class="btn sm" onclick="go('handover')">Hand Over Chairmanship</button>` : ''}
+  </div></div>`;
+
+  return `
+  <div class="page-head"><div><h2>Office Bearers</h2>
+    <p>Each post is held by one member. Appointing someone new stands the previous holder down.</p></div></div>
+  <div id="postMsg"></div>
+  <div class="grid g2">
+  ${chairCard}
+  ${Object.entries(POSTS).map(([role,[title,powers]]) => {
+    const holder = holderOf(role);
+    return `<div class="card"><h3>${title}</h3><div class="card-body">
+      <div class="hint" style="margin-bottom:12px">${powers}</div>
+      ${holder ? `<div style="display:flex;align-items:center;gap:11px;padding:11px;border-radius:11px;
+            background:var(--gold-lt);border:1px solid var(--gold-mid);margin-bottom:12px">
+          ${avatar(holder,44)}
+          <div style="flex:1"><b>${esc(holder.name)}</b>
+            <div class="hint">${esc(holder.company)}</div></div>
+        </div>`
+      : `<div style="padding:12px;border:1px solid var(--line);border-radius:10px;
+            color:var(--muted);font-size:13px;margin-bottom:12px">Nobody appointed yet</div>`}
+      <div class="field" style="margin-bottom:10px">
+        <select id="pick_${role}">
+          <option value="">-- Select member --</option>
+          ${candidates.map(m=>`<option value="${m.id}"${m.role===role?' selected':''}>${esc(m.name)} — ${esc(m.company)}</option>`).join('')}
+        </select></div>
+      <button class="btn sm" onclick="appoint('${role}')">${holder?'Change':'Appoint'}</button>
+      ${holder?`<button class="btn danger sm" onclick="standDown('${holder.id}','${esc(holder.name)}')">Stand down</button>`:''}
+    </div></div>`;
+  }).join('')}
+  </div>`;
+}
+
+/* =========================================================
+   HAND OVER THE CHAIRMANSHIP
+   ========================================================= */
+function vHandover(){
+  if(!isChairman()) return '<div class="empty">Only the sitting chairman can hand over the post.</div>';
+  const list = approved().filter(m => m.id !== SESSION.id && m.isActive !== false);
+  return `
+  <div class="page-head"><div><h2>Hand Over Chairmanship</h2>
+    <p>The member you choose becomes chairman with full rights over the chapter.</p></div></div>
+  <div id="hoMsg"></div>
+  <div class="msg err"><b>This cannot be undone by you.</b> You keep your membership, referrals and
+    history, but return to being an ordinary member — only the new chairman can hand the post back.</div>
+  <div class="card"><h3>Choose the new chairman</h3><div class="card-body">
+    <div class="field"><label>New Chairman</label>
+      <select id="hoPick"><option value="">-- Select member --</option>
+        ${list.map(m=>`<option value="${m.id}">${esc(m.name)} — ${esc(m.company)}</option>`).join('')}
+      </select></div>
+    <div class="field"><label>Type <b>HAND OVER</b> to confirm</label>
+      <input id="hoConfirm" placeholder="HAND OVER" autocomplete="off"></div>
+    <button class="btn danger" onclick="submitHandover()">Hand Over Chairmanship</button>
+  </div></div>`;
+}
+
+async function submitHandover(){
+  if(BUSY) return;
+  const id = document.getElementById('hoPick').value;
+  const typed = document.getElementById('hoConfirm').value.trim().toUpperCase();
+  if(!id) return note('hoMsg','err','Choose the new chairman first.');
+  if(typed !== 'HAND OVER') return note('hoMsg','err','Type HAND OVER exactly to confirm.');
+  busy(true);
+  try{
+    const {data,error} = await SB.rpc('hand_over_chairman',{p_new_chairman_id: uidOf(id)});
+    if(error) return fail('hoMsg', error);
+    if(!data || data.ok !== true) return fail('hoMsg',(data&&data.error)||'Could not hand over.');
+    await refresh();
+    CUR = 'dash'; render();
+    alert(`${data.incoming} is now the chairman. You are an ordinary member from this moment.`);
+  } finally { busy(false); }
+}
+
+/* =========================================================
+   MEMBER REMOVAL — keep the record, block the login
+   ========================================================= */
+delMember = async function(id){
+  const m = member(id); if(!m) return;
+  const reason = prompt(
+    `Remove ${m.name} from the roll?\n\n`+
+    `Their referrals, R2R meetings and attendance records are kept and still count in every report. `+
+    `They simply will not be able to sign in again.\n\n`+
+    `Reason (optional):`, '');
+  if(reason === null) return;
+  busy(true);
+  try{
+    const {data,error} = await SB.rpc('remove_member',{p_member_id: uidOf(id), p_reason: reason || null});
+    if(error) return fail(null, error);
+    if(!data || data.ok !== true) return fail(null,(data&&data.error)||'Could not remove the member.');
+    await loadPublic(); await refresh();
+    alert(`${data.member} has been removed from the roll. Their records are kept.`);
+  } finally { busy(false); }
+}
+
+async function restoreMember(id){
+  const m = member(id); if(!m) return;
+  if(!confirm(`Bring ${m.name} back?\n\nThey will be able to sign in again. Their old password no longer works, so set them a new one afterwards.`)) return;
+  busy(true);
+  try{
+    const {data,error} = await SB.rpc('restore_member',{p_member_id: uidOf(id)});
+    if(error) return fail(null, error);
+    if(!data || data.ok !== true) return fail(null,(data&&data.error)||'Could not restore the member.');
+    await loadPublic(); await refresh();
+    alert(`${data.member} is back on the roll.\n\n${data.note||''}`);
+  } finally { busy(false); }
+}
+
+/* All Members: show removed people and offer Restore. */
+memRows = function(){
+  let list = DB.members.filter(m=>{
+    const hay=(m.name+' '+m.company+' '+m.vertical+' '+m.phone+' '+m.email).toLowerCase();
+    return (!memQ.t||hay.includes(memQ.t))&&(!memQ.s||m.status===memQ.s);});
+  list = list.slice().sort((a,b)=>a.name.localeCompare(b.name));
+  if(!list.length) return '<div class="empty">No members match.</div>';
+  return `<table><thead><tr><th>ID</th><th>Member</th><th>Company</th><th>Vertical</th>
+    <th>Mobile</th><th>Status</th><th>Actions</th></tr></thead><tbody>
+  ${list.map(m=>`<tr>
+    <td><b>${esc(m.code)}</b></td>
+    <td><div style="display:flex;align-items:center;gap:9px">${avatar(m,34)}
+      <div><b>${esc(m.name)}</b>${roleBadge(m)}
+      ${m.status==='removed'&&m.removalReason?`<div class="hint">${esc(m.removalReason)}</div>`:''}</div></div></td>
+    <td>${esc(m.company)}</td>
+    <td><span class="tag blue">${esc(m.vertical)}</span></td>
+    <td>${esc(m.phone)}</td>
+    <td>${tag(m.status)}</td>
+    <td>
+      ${isBoss()?`<button class="btn ghost sm" onclick="openReset('${m.id}')">Reset password</button>`:''}
+      ${m.status==='removed'
+        ? `<button class="btn sm" onclick="restoreMember('${m.id}')">Restore</button>`
+        : `<button class="btn danger sm" onclick="delMember('${m.id}')">Remove</button>`}
+    </td></tr>`).join('')}
+  </tbody></table>`;
+}
+
+/* =========================================================
+   ROTARY ID — the member owns it and can change it any time
+   ========================================================= */
+const _vProfile = vProfile;
+vProfile = function(){
+  const m = member(SESSION.id);
+  let html = _vProfile();
+  /* Slot the Rotary ID in above Full Name. */
+  html = html.replace('<div class="field"><label>Full Name</label>',
+    `<div class="field"><label>Rotary ID</label>
+       <input id="pRotary" value="${esc(m.rotaryId||'')}" placeholder="Your Rotary membership ID" autocomplete="off">
+       <div class="hint">Yours to set — change it whenever you need to.</div></div>
+     <div class="field"><label>Full Name</label>`);
+  html = html.replace(`Member ID ${esc(m.id)}`, `${m.rotaryId?'Rotary ID':'Member ID'} ${esc(m.code)}`);
+  return html;
+}
+
+const _saveProfile = saveProfile;
+saveProfile = async function(){
+  const el = document.getElementById('pRotary');
+  const wanted = el ? el.value.trim() : null;
+  await _saveProfile();
+  const m = member(SESSION.id);
+  if(el && m && wanted !== (m.rotaryId||'')){
+    busy(true);
+    try{
+      const {data,error} = await SB.rpc('set_my_rotary_id',{p_rotary_id: wanted});
+      if(error) return fail('profMsg', error);
+      if(!data || data.ok !== true) return fail('profMsg',(data&&data.error)||'Could not save your Rotary ID.');
+      await refresh();
+      note('profMsg','ok','Profile updated.');
+    } finally { busy(false); }
+  }
+}
+
+/* Directory shows the Rotary ID in the ID column. */
+const _dirRowsV3 = dirRows;
+dirRows = function(){
+  let html = _dirRowsV3();
+  DB.members.forEach(m => {
+    if(m.rotaryId) html = html.split(`<td><b>${esc(m.id)}</b></td>`).join(`<td><b>${esc(m.rotaryId)}</b></td>`);
+  });
+  return html;
+}
+
+/* =========================================================
+   MEGA DIRECTORY — every chapter in one list
+   ========================================================= */
+let megaQ = {t:'', c:'', v:''};
+function megaSet(){
+  megaQ = {t:document.getElementById('gqT').value.toLowerCase(),
+           c:document.getElementById('gqC').value,
+           v:document.getElementById('gqV').value};
+  document.getElementById('megaBody').innerHTML = megaRows();
+}
+
+async function loadMega(){
+  const {data,error} = await SB.from('mega_directory').select('*');
+  MEGA = error ? [] : (data||[]);
+  if(error) console.warn('mega directory:', error.message);
+}
+
+function megaRows(){
+  const list = MEGA.filter(m => {
+    const hay = [m.name,m.company,m.vertical,m.phone,m.contact_email,m.chapter_name]
+      .join(' ').toLowerCase();
+    return (!megaQ.t || hay.includes(megaQ.t))
+        && (!megaQ.c || m.chapter_name === megaQ.c)
+        && (!megaQ.v || m.vertical === megaQ.v);
+  });
+  if(!list.length) return '<div class="empty">No members match your search.</div>';
+  const byChapter = {};
+  list.forEach(m => { (byChapter[m.chapter_name] = byChapter[m.chapter_name] || []).push(m); });
+  return Object.keys(byChapter).sort().map(ch => `
+    <h4 style="margin:18px 0 8px;color:var(--blue);font-size:14px">${esc(ch)}
+      <span class="hint" style="display:inline;font-weight:400">${byChapter[ch].length} members</span></h4>
+    <table><thead><tr><th>Rotary ID</th><th>Member</th><th>Company</th><th>Vertical</th>
+      <th>Mobile</th><th>Email</th></tr></thead><tbody>
+    ${byChapter[ch].map(m=>`<tr>
+      <td>${esc(m.rotary_id||'—')}</td>
+      <td><b>${esc(m.name)}</b>${m.role&&roleTag(m.role)?` <span class="tag">${esc(roleTag(m.role))}</span>`:''}</td>
+      <td>${esc(m.company||'')}</td>
+      <td><span class="tag blue">${esc(m.vertical||'')}</span></td>
+      <td>${esc(m.phone||'')}</td>
+      <td>${esc(m.contact_email||'')}</td></tr>`).join('')}
+    </tbody></table>`).join('');
+}
+
+function vMega(){
+  const chapters = [...new Set(MEGA.map(m=>m.chapter_name))].sort();
+  const verticals = [...new Set(MEGA.map(m=>m.vertical).filter(Boolean))].sort();
+  return `
+  <div class="page-head"><div><h2>Mega Directory</h2>
+    <p>${MEGA.length} members across ${chapters.length} chapter${chapters.length===1?'':'s'}.</p></div></div>
+  <div class="card"><h3>Search Every Chapter</h3><div class="card-body">
+    <div class="toolbar">
+      <div style="flex:2"><label>Search</label>
+        <input id="gqT" placeholder="Name, company, vertical, phone…" oninput="megaSet()" value="${esc(megaQ.t)}"></div>
+      <div><label>Chapter</label><select id="gqC" onchange="megaSet()">
+        <option value="">All chapters</option>
+        ${chapters.map(c=>`<option${megaQ.c===c?' selected':''}>${esc(c)}</option>`).join('')}</select></div>
+      <div><label>Vertical</label><select id="gqV" onchange="megaSet()">
+        <option value="">All verticals</option>
+        ${verticals.map(v=>`<option${megaQ.v===v?' selected':''}>${esc(v)}</option>`).join('')}</select></div>
+      <div style="min-width:auto"><button class="btn ghost" onclick="megaQ={t:'',c:'',v:''};render()">Reset</button></div>
+    </div>
+    <div class="tbl-wrap" id="megaBody">${megaRows()}</div>
+  </div></div>`;
+}
+
+/* =========================================================
+   RANGED REPORTS — week / month / custom, with CSV
+   ========================================================= */
+let RANGE = {mode:'week', from:'', to:''};
+const RG_FROM_ATTR = 'onchange="setRangeDate(\'from\',this.value)"';
+const RG_TO_ATTR   = 'onchange="setRangeDate(\'to\',this.value)"';
+
+/* A "week" runs from the most recent Tuesday meeting to today.
+   Dates are built from local parts — toISOString() would shift the day
+   backwards for anyone east of UTC, which is everyone here. */
+function rangeDates(){
+  const today = new Date();
+  const iso = d => d.getFullYear() + '-' +
+                   String(d.getMonth()+1).padStart(2,'0') + '-' +
+                   String(d.getDate()).padStart(2,'0');
+  if(RANGE.mode === 'week'){
+    const d = new Date(today);
+    while(d.getDay() !== 2) d.setDate(d.getDate() - 1);
+    return {from: iso(d), to: iso(today)};
+  }
+  if(RANGE.mode === 'month'){
+    return {from: iso(new Date(today.getFullYear(), today.getMonth(), 1)), to: iso(today)};
+  }
+  return {from: RANGE.from || iso(today), to: RANGE.to || iso(today)};
+}
+
+function setRange(mode){ RANGE.mode = mode; render(); }
+function setRangeDate(which, v){
+  RANGE[which] = toISO(v) || '';
+  if(RANGE.from && RANGE.to) render();
+}
+
+function inRange(dateStr, r){
+  if(!dateStr) return false;
+  const d = String(dateStr).slice(0,10);
+  return d >= r.from && d <= r.to;
+}
+
+function rangedRows(){
+  const r = rangeDates();
+  const refs = DB.referrals.filter(x => inRange(x.createdAt, r));
+  const meets = DB.r2r.filter(x => inRange(x.date, r));
+  const rows = approved().map(m => {
+    const given = refs.filter(x => x.fromId === m.id);
+    const recd  = refs.filter(x => x.toId === m.id);
+    const conv  = recd.filter(x => x.status === 'converted');
+    return {m,
+      given: given.length,
+      recd: recd.length,
+      converted: conv.length,
+      business: conv.reduce((t,x)=>t+(Number(x.value)||0),0),
+      r2r: meets.filter(x => x.aId === m.id || x.bId === m.id).length};
+  });
+  return {r, refs, meets, rows};
+}
+
+function vRanged(){
+  const {r, refs, meets, rows} = rangedRows();
+  const active = rows.filter(x => x.given || x.recd || x.r2r)
+                     .sort((a,b)=>b.given-a.given || b.business-a.business);
+  const totBiz = rows.reduce((t,x)=>t+x.business,0);
+  const btn = (mode,label) =>
+    `<button class="btn ${RANGE.mode===mode?'':'ghost'} sm" onclick="setRange('${mode}')">${label}</button>`;
+
+  return `
+  <div class="page-head"><div><h2>Reports</h2>
+    <p>Referrals and R2R meetings for every member over the period you choose.</p></div></div>
+
+  <div class="card"><h3>Period</h3><div class="card-body">
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">
+      ${btn('week','This Week')}${btn('month','This Month')}${btn('custom','Custom Dates')}
+    </div>
+    ${RANGE.mode==='custom' ? `<div class="grid g2">
+      <div class="field"><label>From</label>
+        ${dateField('rgFrom', RANGE.from, RG_FROM_ATTR)}</div>
+      <div class="field"><label>To</label>
+        ${dateField('rgTo', RANGE.to, RG_TO_ATTR)}</div>
+    </div>` : ''}
+    <div class="hint">Showing <b>${dmy(r.from)}</b> to <b>${dmy(r.to)}</b>${
+      RANGE.mode==='week' ? ' — from the most recent Tuesday meeting.' : '.'}</div>
+  </div></div>
+
+  <div class="stats">
+    <div class="stat"><div class="k">${refs.length}</div><div class="l">Referrals</div></div>
+    <div class="stat"><div class="k">${refs.filter(x=>x.status==='converted').length}</div><div class="l">Converted</div></div>
+    <div class="stat"><div class="k">${meets.length}</div><div class="l">R2R Meetings</div></div>
+    <div class="stat"><div class="k">${inr(totBiz)}</div><div class="l">Business Value</div></div>
+  </div>
+
+  <div class="card"><h3>By Member</h3>
+    <div class="card-body">
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px">
+        <button class="btn ghost sm" onclick="exportRanged('summary')">Download member summary</button>
+        <button class="btn ghost sm" onclick="exportRanged('referrals')">Download referrals</button>
+        <button class="btn ghost sm" onclick="exportRanged('r2r')">Download R2R meetings</button>
+        <button class="btn ghost sm" onclick="exportRanged('attendance')">Download attendance</button>
+      </div>
+      <div class="tbl-wrap">
+      ${active.length ? `<table><thead><tr><th>Member</th><th>Given</th><th>Received</th>
+        <th>Converted</th><th>Business</th><th>R2R</th></tr></thead><tbody>
+        ${active.map(x=>`<tr>
+          <td><div style="display:flex;align-items:center;gap:9px">${avatar(x.m,32)}<b>${esc(x.m.name)}</b></div></td>
+          <td>${x.given}</td><td>${x.recd}</td><td>${x.converted}</td>
+          <td>${inr(x.business)}</td><td>${x.r2r}</td></tr>`).join('')}
+        </tbody></table>`
+      : '<div class="empty">Nothing recorded in this period yet.</div>'}
+      </div>
+    </div>
+  </div>`;
+}
+
+function exportRanged(what){
+  const {r, refs, meets, rows} = rangedRows();
+  const span = r.from + '_to_' + r.to;
+  if(what === 'summary'){
+    return download('rmbf_summary_'+span+'.csv',
+      [['Member','Company','Rotary ID','Referrals Given','Referrals Received',
+        'Converted','Business Value','R2R Meetings']].concat(
+      rows.map(x=>[x.m.name,x.m.company,x.m.rotaryId||'',x.given,x.recd,x.converted,x.business,x.r2r])));
+  }
+  if(what === 'referrals'){
+    return download('rmbf_referrals_'+span+'.csv',
+      [['Date','Ref','From','To','Client','Status','Value','Notes']].concat(
+      refs.map(x=>[dmy(x.createdAt),x.id,mname(x.fromId),mname(x.toId),
+                   x.client,x.status,x.value,x.desc])));
+  }
+  if(what === 'r2r'){
+    return download('rmbf_r2r_'+span+'.csv',
+      [['Date','Ref','Member A','Member B','Location','Benefit']].concat(
+      meets.map(x=>[dmy(x.date),x.id,mname(x.aId),mname(x.bId),x.location,x.benefit])));
+  }
+  /* Attendance register: one column per meeting date in the period. */
+  const dates = [...new Set(ATT.filter(a => inRange(a.date, r)).map(a => a.date))].sort();
+  const head = ['Member','Company'].concat(dates.map(dmy)).concat(['Present','Leave','Absent']);
+  const body = approved().map(m => {
+    const marks = dates.map(d => {
+      const rec = ATT.find(a => a.date === d && (a.memberId === m.id || a.member_id === uidOf(m.id)));
+      if(!rec) return 'P';
+      return rec.status === 'leave' ? 'L' : rec.status === 'absent' ? 'A' : 'P';
+    });
+    const c = s => marks.filter(x => x === s).length;
+    return [m.name, m.company].concat(marks).concat([c('P'), c('L'), c('A')]);
+  });
+  download('rmbf_attendance_'+span+'.csv', [head].concat(body));
+}
+
+/* =========================================================
+   DASHBOARD — trial banner for everyone
+   ========================================================= */
+const _vMemberDashV3 = vMemberDash;
+vMemberDash = function(){ return trialBanner() + _vMemberDashV3(); }
+const _vAdminDashV3 = vAdminDash;
+vAdminDash = function(){ return trialBanner() + _vAdminDashV3(); }
+
+/* ---------- keep the cross-chapter list fresh ---------- */
+const _syncAllV3 = syncAll;
+syncAll = async function(){
+  await _syncAllV3();
+  try{ await loadMega(); }catch(e){ console.warn('mega:', e.message); }
+}
+
 /* =========================== BOOT =========================== */
 DB=blank();
 fillSelect(document.getElementById('rBlood'),BLOOD,'-- Select blood group --');
@@ -3578,7 +4372,7 @@ resetLoginFields();
 (async function boot(){
   try{
     await loadPublic();
-    refreshLoginList();refreshVerticalPickers();
+    refreshLoginList();refreshVerticalPickers();paintChapterPicker();
     const {data:{session}}=await SB.auth.getSession();
     if(session){
       if(await startSession('mLoginMsg'))enterApp();
