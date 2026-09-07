@@ -2,7 +2,19 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+
+<!-- Installable web app: iPhone members add this to the home screen and it
+     runs full-screen with no Safari chrome, which is why there is no iOS build. -->
+<link rel="manifest" href="/manifest.webmanifest">
+<meta name="theme-color" content="#17458F">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="RMBF">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png">
+<link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png">
 <title>RMB Business Forum — Rotary Means Business Fellowship</title>
 <style>
 :root{
@@ -197,9 +209,11 @@ tbody tr:hover{background:var(--gold-lt)}
   .hero-logo{height:56px}
   .celeb{padding:10px}
 }
-@media(max-width:400px){
+@media(max-width:359px){          /* only the very smallest phones go single-column */
   .stats{grid-template-columns:1fr}
-  .nav button{min-width:68px;font-size:10px}
+}
+@media(max-width:400px){
+  .nav button{font-size:10px}
 }
 
 /* type-to-search picker */
@@ -223,7 +237,90 @@ tbody tr:hover{background:var(--gold-lt)}
 .pw input{padding-right:70px}
 .pw .eye{position:absolute;right:6px;top:50%;transform:translateY(-50%);background:var(--gold-lt);border:1px solid var(--gold-mid);color:#8A6100;font-size:11.5px;font-weight:700;padding:6px 10px;border-radius:6px;cursor:pointer;font-family:inherit;line-height:1}
 .pw .eye:hover{background:var(--gold-mid);color:#3A2A00}
-@media(max-width:760px){.g2,.g3,.g4{grid-template-columns:1fr}.brandbar{padding:9px 14px}main{padding:14px}.nav{top:auto;position:static}.brandlogo{height:40px}.hero-logo{height:56px}}
+@media(max-width:760px){.g2,.g3,.g4{grid-template-columns:1fr}}
+
+/* =========================================================
+   PHONE APP SHELL
+   iPhone members have no native build, so the portal has to
+   behave like one: full-screen when installed, a fixed bottom
+   tab bar, safe-area aware, and touch feedback on everything.
+   ========================================================= */
+@media(max-width:760px){
+  html{-webkit-tap-highlight-color:transparent}
+  body{overscroll-behavior-y:contain}
+
+  /* notch / dynamic island */
+  .brandbar{padding-top:calc(8px + env(safe-area-inset-top));
+            padding-left:calc(12px + env(safe-area-inset-left));
+            padding-right:calc(12px + env(safe-area-inset-right))}
+
+  /* home-indicator gutter under the tab bar */
+  .nav{padding-bottom:env(safe-area-inset-bottom);
+       background:rgba(255,255,255,.94);
+       -webkit-backdrop-filter:saturate(180%) blur(14px);
+       backdrop-filter:saturate(180%) blur(14px)}
+  .nav{overflow-x:hidden}
+  .nav button{-webkit-user-select:none;user-select:none;
+              transition:transform .12s ease,background .12s ease;
+              border-radius:12px 12px 0 0;
+              flex:1 1 0;min-width:0;padding:9px 3px 8px;    /* 5 tabs share the width */
+              white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .nav button:active{transform:scale(.92)}
+
+  main{padding-bottom:calc(96px + env(safe-area-inset-bottom));
+       padding-left:calc(12px + env(safe-area-inset-left));
+       padding-right:calc(12px + env(safe-area-inset-right))}
+  .foot{margin-bottom:calc(78px + env(safe-area-inset-bottom))}
+
+  .btn{transition:transform .1s ease}
+  .btn:active{transform:scale(.97)}
+  .card{transition:box-shadow .15s ease}
+}
+
+/* Installed to the home screen: no browser chrome, so drop the
+   web furniture and let it read as an app. */
+@media(display-mode:standalone),(display-mode:fullscreen){
+  .foot{display:none}
+  body{overscroll-behavior:none}
+}
+
+/* ---------- "More" sheet: the tabs that don't fit the bar ---------- */
+#moreSheet{position:fixed;inset:0;z-index:200;display:flex;align-items:flex-end}
+#moreSheet .ms-back{position:absolute;inset:0;background:rgba(11,26,52,.42);
+  opacity:0;transition:opacity .18s ease}
+#moreSheet.open .ms-back{opacity:1}
+#moreSheet .ms-card{position:relative;width:100%;background:#fff;
+  border-radius:20px 20px 0 0;padding:8px 14px calc(20px + env(safe-area-inset-bottom));
+  box-shadow:0 -10px 40px rgba(11,26,52,.28);
+  transform:translateY(100%);transition:transform .24s cubic-bezier(.32,.72,0,1);
+  max-height:78vh;overflow-y:auto;-webkit-overflow-scrolling:touch}
+#moreSheet.open .ms-card{transform:translateY(0)}
+#moreSheet .ms-grip{width:38px;height:4px;border-radius:4px;background:var(--line);
+  margin:6px auto 14px}
+#moreSheet .ms-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+#moreSheet .ms-item{display:flex;align-items:center;gap:10px;text-align:left;
+  padding:14px 13px;border:1px solid var(--line);border-radius:14px;background:#fff;
+  font:inherit;font-size:13.5px;font-weight:600;color:var(--ink);cursor:pointer;
+  transition:transform .1s ease}
+#moreSheet .ms-item:active{transform:scale(.96)}
+#moreSheet .ms-item.on{border-color:var(--gold);background:var(--gold-lt);color:var(--blue)}
+#moreSheet .ms-ic{font-size:19px;line-height:1;flex:0 0 auto}
+#moreSheet .ms-item .pill{margin-left:auto}
+
+/* ---------- iOS add-to-home-screen hint ---------- */
+#a2hs{position:fixed;left:12px;right:12px;z-index:150;
+  bottom:calc(84px + env(safe-area-inset-bottom));
+  background:var(--blue);color:#fff;border-radius:14px;padding:13px 14px;
+  box-shadow:0 8px 30px rgba(11,26,52,.32);display:flex;gap:11px;align-items:center;
+  font-size:12.8px;line-height:1.45;
+  transform:translateY(140%);transition:transform .3s cubic-bezier(.32,.72,0,1)}
+#a2hs.show{transform:translateY(0)}
+#a2hs img{width:34px;height:34px;border-radius:8px;flex:0 0 auto}
+#a2hs b{display:block;font-size:13.5px;margin-bottom:1px}
+#a2hs .x{margin-left:auto;flex:0 0 auto;background:rgba(255,255,255,.16);border:none;
+  color:#fff;font:inherit;font-size:17px;line-height:1;width:28px;height:28px;
+  border-radius:50%;cursor:pointer}
+
 @media print{.nav,.brandbar .spacer,.btn{display:none}}
 </style>
 </head>
@@ -4819,6 +4916,116 @@ async function closeGive(id){
   } finally { busy(false); }
 }
 
+
+/* =========================================================
+   PHONE NAVIGATION — 5 fixed tabs + a "More" sheet
+   The bar holds 13 items on a desktop. On a phone that turns
+   into a sideways-scrolling strip nobody scrolls, so keep the
+   tabs a member actually taps and put the rest in a sheet.
+   ========================================================= */
+const PHONE = () => window.matchMedia('(max-width:760px)').matches;
+const PRIMARY_TABS = {
+  member: ['dash','refer','inbox','r2r'],
+  admin:  ['dash','approvals','members','allref']
+};
+const navKey = b => (((b.getAttribute('onclick')||'').match(/go\('([^']+)'\)/)||[])[1]) || '';
+/* A tab bar has ~70px per tab. "Referrals Received" does not fit; "Received" does. */
+const SHORT_TAB = {dash:'Home', refer:'Refer', inbox:'Received', sent:'Given', r2r:'R2R',
+                   approvals:'Approve', members:'Members', allref:'Referrals'};
+const navLabel = b => { const c=b.cloneNode(true); const p=c.querySelector('.pill'); if(p)p.remove();
+                        return c.textContent.trim(); };
+
+function closeMoreSheet(){ const s=document.getElementById('moreSheet'); if(s) s.remove(); }
+
+function openMoreSheet(rest){
+  closeMoreSheet();
+  const wrap=document.createElement('div');
+  wrap.id='moreSheet';
+  const items = rest.map(b=>{
+    const k=navKey(b), pill=b.querySelector('.pill');
+    return '<button class="ms-item'+(b.classList.contains('on')?' on':'')+'" '
+         + 'onclick="closeMoreSheet();go(\''+k+'\')">'
+         + '<span class="ms-ic">'+(b.getAttribute('data-icon')||'•')+'</span>'
+         + '<span>'+esc(navLabel(b))+'</span>'
+         + (pill?'<span class="pill">'+esc(pill.textContent)+'</span>':'')
+         + '</button>';
+  }).join('');
+  wrap.innerHTML='<div class="ms-back"></div><div class="ms-card">'
+               + '<div class="ms-grip"></div><div class="ms-grid">'+items+'</div></div>';
+  document.body.appendChild(wrap);
+  wrap.querySelector('.ms-back').onclick=closeMoreSheet;
+  requestAnimationFrame(()=>wrap.classList.add('open'));
+}
+
+const _buildNavDesktop = buildNav;
+buildNav = function(){
+  _buildNavDesktop();
+  closeMoreSheet();
+  const nav=document.getElementById('nav');
+  if(!nav || !PHONE() || !SESSION) return;
+  const keep = PRIMARY_TABS[SESSION.role==='admin'?'admin':'member'];
+  const btns = Array.prototype.slice.call(nav.children);
+  const prim = btns.filter(b=>keep.indexOf(navKey(b))>=0);
+  const rest = btns.filter(b=>keep.indexOf(navKey(b))<0);
+  if(rest.length<2) return;                 // nothing worth hiding
+  const restActive = rest.some(b=>b.classList.contains('on'));
+  const alerts = rest.reduce((n,b)=>n+(b.querySelector('.pill')?1:0),0);
+
+  nav.innerHTML='';
+  prim.forEach(b=>{
+    const short = SHORT_TAB[navKey(b)];
+    if(short){ const pill=b.querySelector('.pill');
+               b.innerHTML = short + (pill ? pill.outerHTML : ''); }
+    nav.appendChild(b);
+  });
+  const more=document.createElement('button');
+  more.className = restActive ? 'on' : '';
+  more.setAttribute('data-icon','≡');
+  more.innerHTML = 'More' + (alerts?'<span class="pill">'+alerts+'</span>':'');
+  more.onclick = function(){ openMoreSheet(rest); };
+  nav.appendChild(more);
+};
+
+/* rebuild the bar when the phone is rotated or the window resized */
+let _navW = window.innerWidth;
+window.addEventListener('resize', function(){
+  if(!SESSION) return;
+  const wasPhone = _navW<=760, isPhone = window.innerWidth<=760;
+  _navW = window.innerWidth;
+  if(wasPhone!==isPhone) buildNav();
+});
+window.addEventListener('orientationchange', function(){ if(SESSION) setTimeout(buildNav,120); });
+
+/* =========================================================
+   iOS: nudge members to install it to the home screen.
+   Safari has no install prompt, so it has to be explained.
+   ========================================================= */
+(function installHint(){
+  const ua = navigator.userAgent || '';
+  const isIOS = /iPad|iPhone|iPod/.test(ua)
+             || (navigator.platform==='MacIntel' && navigator.maxTouchPoints>1);
+  const installed = window.navigator.standalone===true
+                 || window.matchMedia('(display-mode:standalone)').matches;
+  if(!isIOS || installed) return;
+  try{ if(localStorage.getItem('rmbf_a2hs')==='off') return; }catch(e){}
+
+  setTimeout(function(){
+    if(document.getElementById('a2hs')) return;
+    const bar=document.createElement('div');
+    bar.id='a2hs';
+    bar.innerHTML='<img src="/apple-touch-icon.png" alt="">'
+      + '<div><b>Install RMBF on your iPhone</b>'
+      + 'Tap Share ↑ in Safari, then <b style="display:inline">Add to Home Screen</b>.</div>'
+      + '<button class="x" aria-label="Dismiss">×</button>';
+    document.body.appendChild(bar);
+    bar.querySelector('.x').onclick=function(){
+      bar.classList.remove('show');
+      try{ localStorage.setItem('rmbf_a2hs','off'); }catch(e){}
+      setTimeout(function(){ bar.remove(); },320);
+    };
+    requestAnimationFrame(function(){ bar.classList.add('show'); });
+  }, 2500);
+})();
 </script>
 </body>
 </html>
