@@ -5026,6 +5026,1035 @@ window.addEventListener('orientationchange', function(){ if(SESSION) setTimeout(
     requestAnimationFrame(function(){ bar.classList.add('show'); });
   }, 2500);
 })();
+
+/* =========================================================================
+   V5 MODULE — matches Android app 4.7: chapter meeting schedule and term,
+   new roles (App Coordinator, Chapter Growth Director), 7-day member
+   payment window, board minutes, referral list with date filters,
+   consolidated report, member report, attendance history with
+   corrections, chairman-only audit log, clickable dashboard, and
+   Excel / PDF downloads. Later declarations win, so this overrides above.
+   ========================================================================= */
+
+/* ---------- roles ---------- */
+POSTS.apc = ['App Coordinator',
+  'Runs the app for the chapter with chairman-level access — members, approvals, passwords, attendance, settings, term and reports. Cannot appoint office bearers or hand over the chairmanship.'];
+POSTS.cgd = ['Chapter Growth Director',
+  'Sees the Consolidated Report and downloads it in Excel or PDF. Reads board minutes.'];
+POSTS.secretary[1] = 'Keeps the accounts and writes the board meeting minutes.';
+POSTS.ac[1] = 'Takes the roll on meeting days, corrects attendance and approves leave.';
+
+isBoss = function(){ return hasRole(['admin','chairman','cc','vc','apc']); };
+function canEditSettings(){ return hasRole(['admin','chairman','cc','vc','apc']); }
+function isDirector(){ return isBoss() || hasRole(['secretary','ard','ac','rc','r2c','cgd']); }
+function canWriteMinutes(){ return hasRole(['admin','chairman','cc','apc','secretary']); }
+function canSeeConsolidated(){ return hasRole(['admin','chairman','cc','apc','cgd']); }
+function canReadAudit(){ return hasRole(['admin','chairman']); }
+
+/* ---------- small date helpers (local time, never toISOString) ---------- */
+const MON5 = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const WEEKDAYS5 = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
+function d5(iso){ const p = String(iso).slice(0,10).split('-').map(Number); return new Date(p[0], p[1]-1, p[2]); }
+function iso5(d){ return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+function today5(){ return iso5(new Date()); }
+function addDays5(iso, n){ const d = d5(iso); d.setDate(d.getDate()+n); return iso5(d); }
+function dow5(iso){ const x = d5(iso).getDay(); return x === 0 ? 7 : x; }       /* Mon=1 … Sun=7 */
+function dmyt(ts){                                                          /* dd/mm/yyyy, h:mm am */
+  if(!ts) return '—';
+  if(String(ts).length <= 10) return dmy(ts);
+  const d = new Date(ts); if(isNaN(d)) return String(ts);
+  let h = d.getHours(); const ap = h >= 12 ? 'PM' : 'AM'; h = h % 12 || 12;
+  return dmy(iso5(d)) + ', ' + h + ':' + String(d.getMinutes()).padStart(2,'0') + ' ' + ap;
+}
+
+/* =========================================================
+   CHAPTER SETTINGS — meeting schedule and term (per chapter)
+   Same rules as the app and the database.
+   ========================================================= */
+let CS = { freq:'weekly', wd:2, anchor:null, mweek:1, custom:[], months:6,
+           start:'2026-01-01', configured:false, canEdit:false, loaded:false };
+
+async function loadSettings(){
+  try{
+    const r = await SB.rpc('my_chapter_settings');
+    const m = r.data;
+    if(m && m.ok){
+      CS = { freq: m.meeting_frequency || 'weekly', wd: Number(m.meeting_weekday) || 2,
+             anchor: m.anchor_date ? String(m.anchor_date).slice(0,10) : null,
+             mweek: Number(m.monthly_week) || 1,
+             custom: (m.custom_dates || []).map(x => String(x).slice(0,10)).sort(),
+             months: Number(m.term_months) || 6,
+             start: String(m.term_start || '2026-01-01').slice(0,10),
+             configured: m.configured === true, canEdit: m.can_edit === true, loaded: true };
+    }
+  }catch(e){ /* not migrated yet: keep the old Tuesday / 6-month default */ }
+}
+
+function isMeetingDay(iso){
+  if(!iso) return false;
+  if(CS.freq === 'custom') return CS.custom.length === 0 || CS.custom.indexOf(iso) >= 0;
+  if(dow5(iso) !== CS.wd) return false;
+  if(CS.freq === 'weekly') return true;
+  if(CS.freq === 'biweekly'){
+    if(!CS.anchor) return true;
+    const days = Math.round((d5(iso) - d5(CS.anchor)) / 86400000);
+    return ((days % 14) + 14) % 14 === 0;
+  }
+  const d = d5(iso);                                        /* monthly */
+  if(CS.mweek === -1){ const n = new Date(d); n.setDate(n.getDate()+7); return n.getMonth() !== d.getMonth(); }
+  return Math.floor((d.getDate()-1)/7)+1 === CS.mweek;
+}
+function lastMeeting(onOrBefore){
+  let d = onOrBefore || today5();
+  for(let i=0;i<400;i++){ if(isMeetingDay(d)) return d; d = addDays5(d,-1); }
+  return onOrBefore || today5();
+}
+function nextMeeting(after){
+  let d = addDays5(after || today5(), 1);
+  for(let i=0;i<400;i++){ if(isMeetingDay(d)) return d; d = addDays5(d,1); }
+  return null;
+}
+function weekCycleStart(iso){ let d = iso || today5(); while(dow5(d) !== CS.wd) d = addDays5(d,-1); return d; }
+function scheduleLabel(){
+  const w = WEEKDAYS5[CS.wd-1];
+  if(CS.freq === 'weekly') return 'Every ' + w;
+  if(CS.freq === 'biweekly') return 'Every other ' + w;
+  if(CS.freq === 'monthly') return (CS.mweek === -1 ? 'Last' : ['First','Second','Third','Fourth'][CS.mweek-1]) + ' ' + w + ' of the month';
+  return CS.custom.length ? 'Custom dates (' + CS.custom.length + ')' : 'Custom dates (none set)';
+}
+function termLengthLabel(){ return CS.months === 6 ? '6 months' : CS.months === 12 ? '1 year' : CS.months + ' months'; }
+
+/* The term containing a date: {start, end, key, label}. */
+function termFor(iso){
+  const d = d5(iso || today5()), a = d5(CS.start), len = CS.months;
+  let months = (d.getFullYear()-a.getFullYear())*12 + (d.getMonth()-a.getMonth());
+  if(d.getDate() < a.getDate()) months--;
+  const k = Math.floor(months / len);
+  const s = new Date(a.getFullYear(), a.getMonth() + k*len, a.getDate());
+  const n = new Date(a.getFullYear(), a.getMonth() + (k+1)*len, a.getDate()); n.setDate(n.getDate()-1);
+  const start = iso5(s), end = iso5(n);
+  const same = s.getFullYear() === n.getFullYear();
+  const endMonthEnd = (() => { const t = new Date(n); t.setDate(t.getDate()+1); return t.getDate() === 1; })();
+  const lab = MON5[s.getMonth()] + (s.getDate() === 1 ? '' : ' ' + s.getDate());
+  const lab2 = MON5[n.getMonth()] + (endMonthEnd ? '' : ' ' + n.getDate());
+  return { start, end, key: start,
+           label: same ? lab + '–' + lab2 + ' ' + s.getFullYear()
+                       : lab + ' ' + s.getFullYear() + ' – ' + lab2 + ' ' + n.getFullYear() };
+}
+function thisTerm(){ return termFor(today5()); }
+function lastTerm(){ return termFor(addDays5(thisTerm().start, -1)); }
+
+/* Attendance terms now follow the chapter's term, worked out from the date. */
+termLabel = function(d){ return termFor(d ? String(d).slice(0,10) : today5()).key; };
+termName = function(t){ return /^\d{4}-\d{2}-\d{2}$/.test(String(t||'')) ? termFor(t).label : String(t||''); };
+allTerms = function(){
+  const s = new Set(ATT.map(a => termFor(a.date).key));
+  s.add(thisTerm().key);
+  return [...s].sort().reverse();
+};
+lastTuesday = function(){ return lastMeeting(today5()); };
+attFor = function(memberId, term){
+  term = term || thisTerm().key;
+  const rows = ATT.filter(a => a.memberId === memberId && termFor(a.date).key === term);
+  const all  = ATT.filter(a => a.memberId === memberId).sort((a,b) => b.date.localeCompare(a.date));
+  let run = 0;
+  for(const a of all){ if(a.status === 'absent') run++; else break; }
+  const present = rows.filter(a => a.status === 'present').length;
+  const leave   = rows.filter(a => a.status === 'leave_approved').length;
+  const absent  = rows.filter(a => a.status === 'absent').length;
+  return { recorded: rows.length, present, leave, absent, run,
+    pct: rows.length ? Math.round((present + leave) * 100 / rows.length) : 0,
+    perfect: rows.length > 0 && absent === 0,
+    left: Math.max(0, 6 - absent),
+    feeDue: run >= 3 || absent >= 6,
+    atRisk: !(run >= 3 || absent >= 6) && (run === 2 || absent === 5) };
+};
+
+/* Roll and leave only on scheduled meeting days. */
+const _submitRollV5 = submitRoll;
+submitRoll = async function(){
+  if(!isMeetingDay(ROLL.date))
+    return document.getElementById('rollMsg') && note('rollMsg','err', dmy(ROLL.date) + ' is not a scheduled meeting day (' + esc(scheduleLabel())
+      + '). Choose a meeting date, or ask the Chairman to update Chapter Settings.');
+  return _submitRollV5();
+};
+const _vTakeRollV5 = vTakeRoll;
+vTakeRoll = function(){
+  const html = _vTakeRollV5();
+  const warn = ROLL.date && !isMeetingDay(ROLL.date)
+    ? `<div class="msg err">${dmy(ROLL.date)} is not a meeting day. This chapter meets: <b>${esc(scheduleLabel())}</b>. Last meeting: ${dmy(lastMeeting())}.</div>`
+    : `<div class="msg info">Meetings: <b>${esc(scheduleLabel())}</b>. Attendance can only be taken on a meeting day.</div>`;
+  return html.replace('<div id="rollMsg"></div>', '<div id="rollMsg"></div>' + warn);
+};
+const _applyLeaveV5 = applyLeave;
+applyLeave = async function(){
+  const d = toISO(document.getElementById('lvDate').value);
+  if(d && !isMeetingDay(d)){
+    const n = nextMeeting(addDays5(d,-1));
+    return note('leaveMsg','err', dmy(d) + ' is not a meeting day (' + esc(scheduleLabel()) + ').'
+      + (n ? ' Next meeting: ' + dmy(n) + '.' : ''));
+  }
+  return _applyLeaveV5();
+};
+
+/* Settings page */
+let CSD = null;   /* draft while editing */
+function vSettings5(){
+  if(!canEditSettings()) return '<div class="empty">Only the Chairman, Vice Chairman or App Coordinator can change chapter settings.</div>';
+  const d = CSD || (CSD = JSON.parse(JSON.stringify(CS)));
+  const saved = CS; CS = d;                                  /* preview with the draft */
+  const up = []; let x = addDays5(today5(), -1);
+  for(let i=0;i<5;i++){ const n = nextMeeting(x); if(!n) break; up.push(n); x = n; }
+  const tt = thisTerm(), lt = lastTerm();
+  let count = 0; for(let q = tt.start; q <= tt.end; q = addDays5(q,1)) if(isMeetingDay(q)) count++;
+  CS = saved;
+  const opt = (v,l,cur) => `<option value="${v}" ${String(cur)===String(v)?'selected':''}>${l}</option>`;
+  const custom = d.months !== 6 && d.months !== 12;
+  return `
+  <div class="page-head"><div><h2>Chapter Settings</h2>
+    <p>When the chapter meets and how long a term runs. Attendance, reports, term filters and payments follow these.</p></div></div>
+  ${CS.configured ? '' : '<div class="msg info">Please confirm your schedule and term. Until you save, the app assumes every Tuesday and 6-month terms (Jan–Jun, Jul–Dec).</div>'}
+  <div id="csMsg"></div>
+  <div class="card"><h3>Meeting Frequency</h3><div class="card-body"><div class="grid g2">
+    <div class="field"><label>How often</label>
+      <select onchange="CSD.freq=this.value;if(CSD.freq==='biweekly'&&!CSD.anchor)CSD.anchor=lastMeeting();render()">
+        ${opt('weekly','Every week',d.freq)}${opt('biweekly','Once every two weeks',d.freq)}
+        ${opt('monthly','Once a month',d.freq)}${opt('custom','Custom dates',d.freq)}</select></div>
+    ${d.freq !== 'custom' ? `<div class="field"><label>Meeting day</label>
+      <select onchange="CSD.wd=Number(this.value);render()">${WEEKDAYS5.map((w,i)=>opt(i+1,w,d.wd)).join('')}</select></div>` : ''}
+    ${d.freq === 'biweekly' ? `<div class="field"><label>One date the chapter met (or will meet)</label>
+      ${dateField('csAnchor', d.anchor, ' onchange="CSD.anchor=toISO(this.value)||CSD.anchor;render()"')}
+      <div class="hint">Meetings repeat every 14 days from this date. It must be a ${WEEKDAYS5[d.wd-1]}.</div></div>` : ''}
+    ${d.freq === 'monthly' ? `<div class="field"><label>Which week</label>
+      <select onchange="CSD.mweek=Number(this.value);render()">${opt(1,'First',d.mweek)}${opt(2,'Second',d.mweek)}${opt(3,'Third',d.mweek)}${opt(4,'Fourth',d.mweek)}${opt(-1,'Last',d.mweek)}</select></div>` : ''}
+  </div>
+  ${d.freq === 'custom' ? `<div class="field" style="margin-top:12px"><label>Meeting dates</label>
+    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px">${d.custom.map(c =>
+      `<span class="tag blue">${dmy(c)} <a href="#" onclick="CSD.custom=CSD.custom.filter(x=>x!=='${c}');render();return false">✕</a></span>`).join('') || '<span class="hint">No dates yet.</span>'}</div>
+    <div style="display:flex;gap:8px">${dateField('csAdd','')}<button class="btn sm" onclick="const v=toISO(document.getElementById('csAdd').value);if(v&&CSD.custom.indexOf(v)<0){CSD.custom.push(v);CSD.custom.sort();}render()">Add date</button></div></div>` : ''}
+  <div class="hint" style="margin-top:12px">Next meetings: <b>${up.map(dmy).join(' · ') || '—'}</b></div>
+  </div></div>
+
+  <div class="card"><h3>Term Duration</h3><div class="card-body"><div class="grid g2">
+    <div class="field"><label>Term</label>
+      <select onchange="CSD.months=this.value==='custom'?(CSD.months===6||CSD.months===12?3:CSD.months):Number(this.value);render()">
+        ${opt(6,'6 Months',custom?'':d.months)}${opt(12,'1 Year',custom?'':d.months)}${opt('custom','Custom',custom?'custom':'')}</select></div>
+    ${custom ? `<div class="field"><label>Months per term</label>
+      <input type="number" min="1" max="36" value="${d.months}" onchange="CSD.months=Math.max(1,Math.min(36,Number(this.value)||6));render()"></div>` : ''}
+    <div class="field"><label>A term starts on</label>
+      ${dateField('csStart', d.start, ' onchange="const v=toISO(this.value);if(v&&Number(v.slice(8))<=28)CSD.start=v;render()"')}
+      <div class="hint">The first day of the current (or any) term — 1st to 28th of a month.</div></div>
+  </div>
+  <div class="kv" style="margin-top:12px">
+    <div class="k">This term</div><div>${esc(tt.label)}</div>
+    <div class="k">Last term</div><div>${esc(lt.label)}</div>
+    <div class="k">Meetings this term</div><div>${count}</div>
+  </div></div></div>
+
+  <div style="display:flex;gap:10px;flex-wrap:wrap">
+    <button class="btn ok" onclick="saveSettings5()">Save Chapter Settings</button>
+    <button class="btn ghost" onclick="CSD=null;render()">Undo changes</button>
+  </div>`;
+}
+async function saveSettings5(){
+  const d = CSD;
+  if(d.freq === 'biweekly' && !d.anchor) return note('csMsg','err','Pick one date the chapter met.');
+  if(d.freq === 'custom' && !d.custom.length) return note('csMsg','err','Add at least one meeting date.');
+  busy(true);
+  try{
+    const {data, error} = await SB.rpc('set_chapter_settings', {
+      p_meeting_frequency: d.freq, p_meeting_weekday: d.wd, p_anchor_date: d.anchor,
+      p_monthly_week: d.mweek, p_custom_dates: d.custom, p_term_months: d.months, p_term_start: d.start });
+    if(error) return fail('csMsg', error);
+    if(!data || data.ok !== true) return fail('csMsg', (data && data.error) || 'Could not save.');
+    CSD = null; await loadSettings(); await refresh();
+    setTimeout(() => { if(document.getElementById('csMsg')) note('csMsg','ok','Chapter settings saved.'); }, 40);
+  } finally { busy(false); }
+}
+
+/* =========================================================
+   7-DAY MEMBER PAYMENT WINDOW — only this member is restricted
+   ========================================================= */
+let MYACCESS = null;
+async function loadMyAccess(){
+  try{ const r = await SB.rpc('my_access'); MYACCESS = (r.data && r.data.ok) ? r.data : null; }
+  catch(e){ MYACCESS = null; }
+}
+function accessRestricted(){ return !!(MYACCESS && MYACCESS.restricted === true); }
+function vRestricted(){
+  const due = Number(MYACCESS && MYACCESS.amount_due) || 0;
+  return `<div class="card" style="max-width:560px;margin:40px auto"><div class="card-body" style="text-align:center;padding:34px 24px">
+    <div style="font-size:46px">⏳</div>
+    <h2 style="margin:10px 0 12px">Membership payment pending</h2>
+    <p style="font-size:15px;line-height:1.6">${esc((MYACCESS && MYACCESS.message) ||
+      'Your membership payment is pending. Please contact your Chapter Chairman to complete the payment and activate your account.')}</p>
+    ${due ? `<p class="hint" style="margin-top:8px">Amount due: <b>${inr(due)}</b></p>` : ''}
+    <div style="margin-top:22px;display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
+      <button class="btn" onclick="(async()=>{await loadMyAccess();await refresh();})()">I have paid — check again</button>
+      <button class="btn ghost" onclick="logout()">Log out</button></div>
+  </div></div>`;
+}
+function accessBanner(){
+  if(!MYACCESS || MYACCESS.payment_status !== 'pending' || MYACCESS.days_left == null) return '';
+  const n = Number(MYACCESS.days_left);
+  return `<div class="msg info"><b>${n === 0 ? 'Last day' : n + ' day' + (n === 1 ? '' : 's') + ' left'}</b> to complete your membership payment. Please contact your Chapter Chairman.</div>`;
+}
+function settingsBanner(){
+  if(!canEditSettings() || !CS.loaded || CS.configured) return '';
+  return `<div class="msg info">Set your chapter's meeting schedule and term — currently assumed <b>${esc(scheduleLabel())}</b>, ${esc(termLengthLabel())} terms.
+    <a href="#" onclick="go('chsettings');return false"><b>Open Chapter Settings →</b></a></div>`;
+}
+
+/* =========================================================
+   SESSION + SYNC
+   ========================================================= */
+let MINUTES = [];
+const _startSessionV5 = startSession;
+startSession = async function(box){
+  const ok = await _startSessionV5(box);
+  if(ok){
+    await loadSettings(); await loadMyAccess();
+    if(isBoss()) SESSION.role = 'admin';                     /* CC and App Coordinator get the admin tabs */
+    await loadMinutes();                                     /* first sync ran before SESSION existed */
+  }
+  return ok;
+};
+async function loadMinutes(){
+  if(SESSION && isDirector()){
+    try{
+      const r = await SB.from('board_minutes').select('*');
+      MINUTES = r.error ? [] : (r.data || []).sort((a,b) => String(b.meeting_date).localeCompare(String(a.meeting_date)));
+    }catch(e){ MINUTES = []; }
+  } else MINUTES = [];
+}
+const _syncAllV5 = syncAll;
+syncAll = async function(){ await _syncAllV5(); await loadMinutes(); };
+const _logoutV5 = logout;
+logout = function(){ MYACCESS = null; CSD = null; MINUTES = []; AUDIT5 = null;
+  CS = { freq:'weekly', wd:2, anchor:null, mweek:1, custom:[], months:6, start:'2026-01-01', configured:false, canEdit:false, loaded:false };
+  return _logoutV5(); };
+
+/* Full-time dates for referrals (the older mapping kept only the day). */
+const _mapReferralV5 = mapReferral;
+mapReferral = function(r){ const x = _mapReferralV5(r); x.createdTs = r.created_at || ''; x.closedTs = r.closed_at || ''; return x; };
+
+/* =========================================================
+   COMMON DATE FILTER — This Week … Custom, following the chapter
+   ========================================================= */
+const RF_MODES = [['all','All Time'],['week','This Week'],['lastweek','Last Week'],['month','This Month'],
+  ['lastmonth','Last Month'],['term','This Term'],['lastterm','Last Term'],['year','This Year'],['custom','Custom Dates']];
+const RF = {};      /* named filter states: RF.reflist = {mode, from, to} */
+function rfState(name, def){ return RF[name] || (RF[name] = {mode: def || 'term', from:'', to:''}); }
+function rfDates(st){
+  const t = today5(), now = new Date();
+  switch(st.mode){
+    case 'all':       return {from:'2000-01-01', to:t};
+    case 'week':      return {from:weekCycleStart(t), to:t};
+    case 'lastweek':  { const s = weekCycleStart(t); return {from:addDays5(s,-7), to:addDays5(s,-1)}; }
+    case 'month':     return {from:iso5(new Date(now.getFullYear(), now.getMonth(), 1)), to:t};
+    case 'lastmonth': return {from:iso5(new Date(now.getFullYear(), now.getMonth()-1, 1)), to:iso5(new Date(now.getFullYear(), now.getMonth(), 0))};
+    case 'term':      { const x = thisTerm(); return {from:x.start, to: x.end < t ? x.end : t}; }
+    case 'lastterm':  { const x = lastTerm(); return {from:x.start, to:x.end}; }
+    case 'year':      return {from:now.getFullYear()+'-01-01', to:t};
+    default:          return {from: st.from || addDays5(t,-30), to: st.to || t};
+  }
+}
+function rfLabel(st){ const m = RF_MODES.find(x => x[0] === st.mode); return m ? m[1] : ''; }
+function rfSpan(st){ const r = rfDates(st); return st.mode === 'all' ? 'All time' : dmy(r.from) + ' to ' + dmy(r.to); }
+function rfIn(ts, r){ if(!ts) return false; const d = String(ts).length > 10 ? iso5(new Date(ts)) : String(ts).slice(0,10); return d >= r.from && d <= r.to; }
+function setRF(name, mode){ const st = rfState(name); if(mode === 'custom'){ const r = rfDates(st); st.from = r.from; st.to = r.to; } st.mode = mode; render(); }
+function setRFDate(name, which, v){ const st = rfState(name); const i = toISO(v); if(i){ st[which] = i; render(); } }
+function rfBar(name, allowAll){
+  const st = rfState(name), r = rfDates(st);
+  return `<div class="card"><div class="card-body">
+    <div style="display:flex;gap:7px;flex-wrap:wrap;margin-bottom:10px">
+      ${RF_MODES.filter(m => allowAll || m[0] !== 'all').map(m =>
+        `<button class="btn ${st.mode===m[0]?'':'ghost'} sm" onclick="setRF('${name}','${m[0]}')">${m[1]}</button>`).join('')}
+    </div>
+    ${st.mode === 'custom' ? `<div class="grid g2">
+      <div class="field"><label>From</label>${dateField('rf_'+name+'_f', r.from, ` onchange="setRFDate('${name}','from',this.value)"`)}</div>
+      <div class="field"><label>To</label>${dateField('rf_'+name+'_t', r.to, ` onchange="setRFDate('${name}','to',this.value)"`)}</div></div>`
+      : `<div class="hint">Showing <b>${rfSpan(st)}</b>${st.mode==='week'?' — since the last '+WEEKDAYS5[CS.wd-1]:''}.</div>`}
+  </div></div>`;
+}
+
+/* The older Reports page gets the same periods (incl. terms). */
+rangeDates = function(){
+  const map = {week:'week', month:'month', custom:'custom'};
+  const st = {mode: map[RANGE.mode] || RANGE.mode, from: RANGE.from, to: RANGE.to};
+  return rfDates(st);
+};
+const _vRangedV5 = vRanged;
+vRanged = function(){
+  let html = _vRangedV5();
+  const btn = (mode,label) => `<button class="btn ${RANGE.mode===mode?'':'ghost'} sm" onclick="setRange('${mode}')">${label}</button>`;
+  const btns = RF_MODES.filter(m => m[0] !== 'all').map(m => btn(m[0], m[1])).join('');
+  html = html.replace(/(<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">)[\s\S]*?(<\/div>)/, '$1' + btns + '$2');
+  html = html.replace(' — from the most recent Tuesday meeting.', ' — since the last ' + WEEKDAYS5[CS.wd-1] + '.');
+  const pick = (isBoss() ? approved() : approved().filter(m => m.id === SESSION.id))
+    .map(m => `<option value="${m.id}">${esc(m.name)}</option>`).join('');
+  return html + `<div class="card"><h3>Member Report</h3><div class="card-body">
+    <div class="hint" style="margin-bottom:8px">Business given and received, every transaction, referrals, attendance and R2R for one member.</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap"><select id="mrPick" style="max-width:320px">${pick}</select>
+    <button class="btn sm" onclick="openMemberReport(document.getElementById('mrPick').value)">Open report</button></div>
+  </div></div>`;
+};
+
+/* =========================================================
+   DOWNLOADS — Excel (SheetJS, loaded on demand) and PDF (written here)
+   ========================================================= */
+function loadScript5(src){
+  return new Promise((ok, bad) => { const s = document.createElement('script'); s.src = src; s.onload = ok; s.onerror = bad; document.head.appendChild(s); });
+}
+async function downloadXlsx(doc){
+  try{
+    if(!window.XLSX) await loadScript5('https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js');
+    const wb = XLSX.utils.book_new(), used = {};
+    doc.sheets.forEach(s => {
+      let n = s.title.replace(/[\[\]:*?\/\\]/g,' ').slice(0,28) || 'Sheet'; let k = 2, u = n;
+      while(used[u]) u = n + ' ' + (k++); used[u] = 1;
+      const ws = XLSX.utils.aoa_to_sheet([[doc.title], [s.title + ' · ' + doc.subtitle], [], s.headers, ...s.rows]);
+      ws['!cols'] = s.headers.map(() => ({wch: 20}));
+      XLSX.utils.book_append_sheet(wb, ws, u);
+    });
+    XLSX.writeFile(wb, 'rmbf_' + doc.stem + '.xlsx');
+  }catch(e){ alert('Could not create the Excel file. Check your connection and try again.'); }
+}
+function pdfClean(v){
+  return String(v == null ? '' : v).replace(/₹/g,'Rs.').replace(/[–—]/g,'-').replace(/·/g,'|').replace(/→/g,'->').replace(/[^\x20-\x7E]/g,'');
+}
+function buildPdf5(doc){
+  const W = 842, H = 595, M = 28, avail = W - 2*M, rowH = 14, size = 8;
+  const BLUE = [0.09,0.27,0.56], GREY = [0.4,0.45,0.55], BLACK = [0,0,0], WHITE = [1,1,1], STRIPE = [0.96,0.97,0.99];
+  const f = x => { let s = Number(x).toFixed(2); s = s.replace(/0+$/,'').replace(/\.$/,''); return s; };
+  const esc5 = s => s.replace(/\\/g,'\\\\').replace(/\(/g,'\\(').replace(/\)/g,'\\)');
+  const fit = (s, w, sz) => { const m = Math.floor(w / (sz*0.52)); return s.length <= m ? s : s.slice(0, Math.max(m-2,0)) + '..'; };
+  const pages = []; let cur = null, y = 0;
+  const newPage = () => { cur = []; pages.push(cur); y = H - M; };
+  const text = (x, yy, s, sz, bold, rgb) => { rgb = rgb || BLACK;
+    cur.push(`${f(rgb[0])} ${f(rgb[1])} ${f(rgb[2])} rg BT /${bold?'F2':'F1'} ${f(sz)} Tf ${f(x)} ${f(yy)} Td (${esc5(s)}) Tj ET`); };
+  const rect = (x, yy, w, h, rgb) => cur.push(`${f(rgb[0])} ${f(rgb[1])} ${f(rgb[2])} rg ${f(x)} ${f(yy)} ${f(w)} ${f(h)} re f`);
+  newPage();
+  y -= 18; text(M, y, fit(pdfClean(doc.title), avail, 16), 16, true, BLUE);
+  y -= 16; text(M, y, fit(pdfClean(doc.subtitle), avail, 10), 10, false, GREY);
+  y -= 14;
+  doc.sheets.forEach(s => {
+    if(y - 40 < M) newPage();
+    y -= 20; text(M, y, fit(pdfClean(s.title), avail, 12), 12, true, BLUE); y -= 6;
+    if(!s.rows.length){ y -= 12; text(M, y, 'Nothing in this period.', 9, false, GREY); y -= 6; return; }
+    const n = s.headers.length, wts = [];
+    for(let c=0;c<n;c++){
+      let L = pdfClean(s.headers[c]).length;
+      s.rows.slice(0,200).forEach(r => { if(c < r.length){ const l = pdfClean(r[c]).length; if(l > L) L = l; } });
+      wts.push(Math.min(Math.max(L,4),40));
+    }
+    const tot = wts.reduce((a,b)=>a+b,0), wid = wts.map(w => avail*w/tot);
+    const header = () => { y -= rowH; rect(M, y, avail, rowH, BLUE); let x = M;
+      for(let c=0;c<n;c++){ text(x+3, y+4, fit(pdfClean(s.headers[c]), wid[c]-5, size), size, true, WHITE); x += wid[c]; } };
+    header();
+    s.rows.forEach((r, i) => {
+      if(y - rowH < M + 14){ newPage(); header(); }
+      y -= rowH; if(i % 2 === 1) rect(M, y, avail, rowH, STRIPE);
+      let x = M;
+      for(let c=0;c<n;c++){ text(x+3, y+4, fit(c < r.length ? pdfClean(r[c]) : '', wid[c]-5, size), size); x += wid[c]; }
+    });
+    y -= 8;
+  });
+  pages.forEach((p, i) => { cur = p; text(W-M-60, M-14, 'Page ' + (i+1) + ' of ' + pages.length, 8, false, GREY); });
+  const objs = []; const add = s => { objs.push(s); return objs.length; };
+  const cat = add(''), po = add('');
+  const f1 = add('<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>');
+  const f2 = add('<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>');
+  const kids = pages.map(p => { const c = p.join('\n');
+    const ci = add(`<< /Length ${c.length} >>\nstream\n${c}\nendstream`);
+    return add(`<< /Type /Page /Parent ${po} 0 R /MediaBox [0 0 ${W} ${H}] /Resources << /Font << /F1 ${f1} 0 R /F2 ${f2} 0 R >> >> /Contents ${ci} 0 R >>`); });
+  objs[cat-1] = `<< /Type /Catalog /Pages ${po} 0 R >>`;
+  objs[po-1] = `<< /Type /Pages /Kids [${kids.map(k => k + ' 0 R').join(' ')}] /Count ${kids.length} >>`;
+  let out = '%PDF-1.4\n'; const offs = [];
+  objs.forEach((o, i) => { offs.push(out.length); out += `${i+1} 0 obj\n${o}\nendobj\n`; });
+  const xref = out.length;
+  out += `xref\n0 ${objs.length+1}\n0000000000 65535 f \n` + offs.map(o => String(o).padStart(10,'0') + ' 00000 n \n').join('')
+       + `trailer\n<< /Size ${objs.length+1} /Root ${cat} 0 R >>\nstartxref\n${xref}\n%%EOF\n`;
+  return out;
+}
+function downloadPdf(doc){
+  const blob = new Blob([buildPdf5(doc)], {type:'application/pdf'});
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'rmbf_' + doc.stem + '.pdf';
+  document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1500);
+}
+let DOC5 = null;
+function dlButtons(fnName){
+  return `<div style="display:flex;gap:8px;flex-wrap:wrap">
+    <button class="btn ghost sm" onclick="downloadXlsx(${fnName}())">⬇ Excel</button>
+    <button class="btn ghost sm" onclick="downloadPdf(${fnName}())">⬇ PDF</button></div>`;
+}
+const stamp5 = r => r.from + '_to_' + r.to;
+
+/* =========================================================
+   REFERRAL LIST — every referral, filtered by date and status
+   ========================================================= */
+let RL = { scope:'all', who:null, status:'' };
+function openRefList(scope, status){ RL = {scope: scope || 'all', who: SESSION.id, status: status || ''}; go('reflist'); }
+function refListRows(){
+  const r = rfDates(rfState('reflist','all'));
+  const scoped = DB.referrals.filter(x => RL.scope === 'given' ? x.fromId === RL.who
+    : RL.scope === 'received' ? x.toId === RL.who
+    : RL.scope === 'mine' ? (x.fromId === RL.who || x.toId === RL.who) : true);
+  const inP = scoped.filter(x => rfIn(x.createdTs || x.createdAt, r))
+    .sort((a,b) => String(b.createdTs||b.createdAt).localeCompare(String(a.createdTs||a.createdAt)));
+  return {r, inP, list: RL.status ? inP.filter(x => x.status === RL.status) : inP};
+}
+const REF_ST = {pending:'Awaiting Reply', converted:'Converted', not_converted:'Not Converted'};
+function refSheet(list){
+  return {title:'Referrals', headers:['Referral ID','Date & time','Referring member','Recipient','Client','Status','Estimated value','Converted value','Closed on','Reply'],
+    rows: list.map(x => [x.id, dmyt(x.createdTs||x.createdAt), mname(x.fromId), mname(x.toId), x.client,
+      REF_ST[x.status] || x.status, x.estimate, x.status==='converted' ? x.value : 0, dmyt(x.closedTs||x.repliedAt), x.replyNote])};
+}
+function refListDoc(){
+  const {r, list} = refListRows();
+  return {title: chapterName() + ' — Referrals', subtitle: rfSpan(rfState('reflist','all')) + (RL.status ? ' · ' + REF_ST[RL.status] : ''),
+    stem: 'referrals_' + stamp5(r), sheets: [refSheet(list)]};
+}
+function vRefList(){
+  const {inP, list} = refListRows();
+  const cnt = s => inP.filter(x => x.status === s).length;
+  const conv = inP.filter(x => x.status === 'converted');
+  const title = RL.scope === 'given' ? 'Referrals I Gave' : RL.scope === 'received' ? 'Referrals I Received' : RL.scope === 'mine' ? 'My Referrals' : 'All Referrals';
+  const chip = (s, l) => `<button class="btn ${RL.status===s?'':'ghost'} sm" onclick="RL.status='${s}';render()">${l}</button>`;
+  return `
+  <div class="page-head"><div><h2>${title}</h2><p>Every referral with its ID, who gave it, who received it, when, status and value.</p></div>
+    ${dlButtons('refListDoc')}</div>
+  ${rfBar('reflist', true)}
+  <div class="stats">
+    <div class="stat b"><div class="lbl">Referrals</div><div class="val">${inP.length}</div></div>
+    <div class="stat g"><div class="lbl">Converted</div><div class="val" style="color:var(--green)">${conv.length}</div>
+      <div class="sub">${inr(conv.reduce((t,x)=>t+(Number(x.value)||0),0))}</div></div>
+    <div class="stat"><div class="lbl">Awaiting Reply</div><div class="val">${cnt('pending')}</div></div>
+    <div class="stat"><div class="lbl">Not Converted</div><div class="val" style="color:var(--red)">${cnt('not_converted')}</div></div>
+  </div>
+  <div style="display:flex;gap:7px;flex-wrap:wrap;margin-bottom:12px">
+    ${chip('','All ('+inP.length+')')}${chip('pending','Awaiting ('+cnt('pending')+')')}${chip('converted','Converted ('+conv.length+')')}${chip('not_converted','Not converted ('+cnt('not_converted')+')')}
+  </div>
+  <div class="card"><div class="tbl-wrap">${list.length ? `<table><thead><tr><th>ID</th><th>Date & time</th><th>From</th><th>To</th><th>Client</th><th>Status</th><th>Value</th></tr></thead><tbody>
+    ${list.map(x => `<tr><td>${esc(x.id)}</td><td>${dmyt(x.createdTs||x.createdAt)}</td><td>${esc(mname(x.fromId))}</td><td>${esc(mname(x.toId))}</td>
+      <td>${esc(x.client||'—')}</td><td>${tag(x.status)}</td><td>${inr(x.status==='converted'?x.value:x.estimate)}</td></tr>`).join('')}
+    </tbody></table>` : '<div class="empty">No referrals in this period.</div>'}</div></div>`;
+}
+
+/* =========================================================
+   MEMBER REPORT — business, referrals, attendance, R2R
+   ========================================================= */
+let MR = { id:null, tab:'business' };
+function openMemberReport(id){ if(!id) return; MR = {id, tab: MR.tab || 'business'}; go('mreport'); }
+function memberReportData(){
+  const id = MR.id, r = rfDates(rfState('mreport','term'));
+  const tx = [];
+  DB.referrals.forEach(x => { if(x.status === 'converted' && (x.fromId === id || x.toId === id)) {
+    const when = x.closedTs || x.repliedAt || x.createdTs || x.createdAt;
+    if(rfIn(when, r)) tx.push({when, giver:x.fromId, taker:x.toId, amount:Number(x.value)||0, src:'Referral', ref:x.id, note:x.client}); } });
+  TYN.forEach(t => { if(t.fromId === id || t.toId === id) { const when = t.date || t.createdAt;
+    if(rfIn(when, r)) tx.push({when, giver:t.fromId, taker:t.toId, amount:t.amount, src:'Thank-you note', ref:'T'+String(t.id).replace(/-/g,'').slice(0,6).toUpperCase(), note:t.note}); } });
+  tx.sort((a,b) => String(b.when).localeCompare(String(a.when)));
+  const given = tx.filter(t => t.giver === id), taken = tx.filter(t => t.taker === id);
+  const sum = l => l.reduce((s,t) => s + t.amount, 0);
+  const by = (l, k) => { const o = {}; l.forEach(t => o[t[k]] = (o[t[k]]||0) + t.amount); return o; };
+  const refs = DB.referrals.filter(x => (x.fromId === id || x.toId === id) && rfIn(x.createdTs || x.createdAt, r))
+    .sort((a,b) => String(b.createdAt).localeCompare(String(a.createdAt)));
+  const att = ATT.filter(a => a.memberId === id && rfIn(a.date, r)).sort((a,b) => b.date.localeCompare(a.date));
+  const pres = att.filter(a => a.status !== 'absent').length;
+  const r2r = DB.r2r.filter(x => (x.aId === id || x.bId === id) && rfIn(x.date, r)).sort((a,b) => b.date.localeCompare(a.date));
+  return {r, tx, given, taken, sum, givenTo: by(given,'taker'), takenFrom: by(taken,'giver'), refs, att, pres,
+          pct: att.length ? Math.round(pres*100/att.length) : 0, r2r};
+}
+const ATT_LBL = {present:'Present', absent:'Absent', leave_approved:'Approved leave'};
+function memberReportDoc(){
+  const d = memberReportData(), id = MR.id;
+  return {title: chapterName() + ' — ' + mname(id), subtitle: rfSpan(rfState('mreport','term')), stem: mname(id).replace(/[^A-Za-z0-9]+/g,'_') + '_' + stamp5(d.r),
+    sheets: [
+      {title:'Summary', headers:['Measure','Value'], rows:[['Total business given', d.sum(d.given)], ['Total business received', d.sum(d.taken)],
+        ['Total business value', d.sum(d.given)+d.sum(d.taken)], ['Referrals given', d.refs.filter(x=>x.fromId===id).length],
+        ['Referrals received', d.refs.filter(x=>x.toId===id).length], ['Meetings recorded', d.att.length], ['Present', d.pres],
+        ['Absent', d.att.length - d.pres], ['Attendance %', d.pct], ['R2R meetings', d.r2r.length]]},
+      {title:'Business', headers:['Date & time','Type','Ref','Given by','Received by','Amount','Note'],
+        rows: d.tx.map(t => [dmyt(t.when), t.src, t.ref, mname(t.giver), mname(t.taker), t.amount, t.note])},
+      {title:'Business by member', headers:['Member','Given to them','Received from them'],
+        rows: [...new Set([...Object.keys(d.givenTo), ...Object.keys(d.takenFrom)])].map(k => [mname(k), d.givenTo[k]||0, d.takenFrom[k]||0])},
+      refSheet(d.refs),
+      {title:'Attendance', headers:['Meeting date','Status'], rows: d.att.map(a => [dmy(a.date), ATT_LBL[a.status]||a.status])},
+      {title:'R2R', headers:['Date','Met with','Location','Benefit'], rows: d.r2r.map(x => [dmy(x.date), mname(x.aId===MR.id?x.bId:x.aId), x.location, x.benefit])}
+    ]};
+}
+function vMemberReport(){
+  const m = member(MR.id);
+  if(!m) return '<div class="empty">Choose a member from Reports.</div>';
+  if(!isBoss() && MR.id !== SESSION.id && !canSeeConsolidated()) return '<div class="empty">You can open only your own report.</div>';
+  const d = memberReportData(), id = MR.id;
+  const tab = (k,l) => `<button class="btn ${MR.tab===k?'':'ghost'} sm" onclick="MR.tab='${k}';render()">${l}</button>`;
+  const list = (o, cls) => Object.keys(o).sort((a,b)=>o[b]-o[a]).map(k => `<tr><td>${esc(mname(k))}</td><td style="text-align:right;${cls}"><b>${inr(o[k])}</b></td></tr>`).join('');
+  let body = '';
+  if(MR.tab === 'business'){
+    body = `<div class="stats">
+      <div class="stat g"><div class="lbl">Business Given</div><div class="val" style="color:var(--green)">${inr(d.sum(d.given))}</div><div class="sub">${d.given.length} transactions</div></div>
+      <div class="stat"><div class="lbl">Business Received</div><div class="val">${inr(d.sum(d.taken))}</div><div class="sub">${d.taken.length} transactions</div></div>
+      <div class="stat b"><div class="lbl">Total Value</div><div class="val">${inr(d.sum(d.given)+d.sum(d.taken))}</div></div></div>
+      <div class="grid g2">
+        <div class="card"><h3>Gave business to</h3><div class="tbl-wrap">${Object.keys(d.givenTo).length ? `<table><tbody>${list(d.givenTo,'color:var(--green)')}</tbody></table>` : '<div class="empty">None</div>'}</div></div>
+        <div class="card"><h3>Received business from</h3><div class="tbl-wrap">${Object.keys(d.takenFrom).length ? `<table><tbody>${list(d.takenFrom,'')}</tbody></table>` : '<div class="empty">None</div>'}</div></div>
+      </div>
+      <div class="card"><h3>Every transaction</h3><div class="tbl-wrap">${d.tx.length ? `<table><thead><tr><th>Date & time</th><th></th><th>Type</th><th>Note</th><th>Amount</th></tr></thead><tbody>
+        ${d.tx.map(t => `<tr><td>${dmyt(t.when)}</td><td>${t.giver===id ? '<b style="color:var(--green)">To</b> '+esc(mname(t.taker)) : '<b>From</b> '+esc(mname(t.giver))}</td>
+          <td>${esc(t.src)} ${esc(t.ref)}</td><td>${esc(t.note||'')}</td><td><b>${inr(t.amount)}</b></td></tr>`).join('')}</tbody></table>` : '<div class="empty">No business in this period.</div>'}</div></div>`;
+  } else if(MR.tab === 'referrals'){
+    body = `<div class="card"><div class="tbl-wrap">${d.refs.length ? `<table><thead><tr><th>ID</th><th>Date & time</th><th>From</th><th>To</th><th>Status</th><th>Value</th><th>Closed</th></tr></thead><tbody>
+      ${d.refs.map(x => `<tr><td>${esc(x.id)}</td><td>${dmyt(x.createdTs||x.createdAt)}</td><td>${esc(mname(x.fromId))}</td><td>${esc(mname(x.toId))}</td>
+        <td>${tag(x.status)}</td><td>${inr(x.status==='converted'?x.value:x.estimate)}</td><td>${dmyt(x.closedTs||x.repliedAt)}</td></tr>`).join('')}</tbody></table>` : '<div class="empty">No referrals in this period.</div>'}</div></div>`;
+  } else if(MR.tab === 'attendance'){
+    body = `<div class="stats"><div class="stat b"><div class="lbl">Meetings</div><div class="val">${d.att.length}</div></div>
+      <div class="stat g"><div class="lbl">Present</div><div class="val" style="color:var(--green)">${d.pres}</div></div>
+      <div class="stat"><div class="lbl">Absent</div><div class="val" style="color:var(--red)">${d.att.length-d.pres}</div></div>
+      <div class="stat"><div class="lbl">Attendance</div><div class="val">${d.pct}%</div></div></div>
+      <div class="card"><div class="tbl-wrap">${d.att.length ? `<table><thead><tr><th>Meeting</th><th>Status</th></tr></thead><tbody>
+      ${d.att.map(a => `<tr><td>${dmy(a.date)}</td><td>${a.status==='absent'?'<span class="tag no">Absent</span>':a.status==='leave_approved'?'<span class="tag blue">Approved leave</span>':'<span class="tag conv">Present</span>'}</td></tr>`).join('')}
+      </tbody></table>` : '<div class="empty">No attendance in this period.</div>'}</div></div>`;
+  } else {
+    body = `<div class="card"><div class="tbl-wrap">${d.r2r.length ? `<table><thead><tr><th>Date</th><th>Met with</th><th>Location</th></tr></thead><tbody>
+      ${d.r2r.map(x => `<tr><td>${dmy(x.date)}</td><td>${esc(mname(x.aId===id?x.bId:x.aId))}</td><td>${esc(x.location||'')}</td></tr>`).join('')}
+      </tbody></table>` : '<div class="empty">No R2R meetings in this period.</div>'}</div></div>`;
+  }
+  return `<div class="page-head"><div style="display:flex;align-items:center;gap:12px">${avatar(m,46)}<div><h2>${esc(m.name)}</h2><p>${esc(m.company||'')}</p></div></div>
+    ${dlButtons('memberReportDoc')}</div>
+    ${rfBar('mreport', true)}
+    <div style="display:flex;gap:7px;flex-wrap:wrap;margin-bottom:12px">${tab('business','Business')}${tab('referrals','Referrals')}${tab('attendance','Attendance')}${tab('r2r','R2R')}</div>
+    ${body}`;
+}
+
+/* =========================================================
+   CONSOLIDATED REPORT — Chairman and Chapter Growth Director
+   ========================================================= */
+function consolidatedData(){
+  const r = rfDates(rfState('consol','term'));
+  const refs = DB.referrals.filter(x => rfIn(x.createdTs || x.createdAt, r));
+  const conv = refs.filter(x => x.status === 'converted');
+  const val = conv.reduce((t,x) => t + (Number(x.value)||0), 0);
+  const fixed = ['week','lastweek','month','lastmonth','term','lastterm','year'].map(mode => {
+    const fr = rfDates({mode}); const l = DB.referrals.filter(x => rfIn(x.createdTs || x.createdAt, fr));
+    const c = l.filter(x => x.status === 'converted');
+    return [RF_MODES.find(m => m[0] === mode)[1], l.length, c.length, c.reduce((t,x)=>t+(Number(x.value)||0),0)];
+  });
+  const att = ATT.filter(a => rfIn(a.date, r));
+  const dates = [...new Set(att.map(a => a.date))].sort().reverse();
+  const attPres = att.filter(a => a.status !== 'absent').length;
+  const phones = new Set(DB.members.map(m => String(m.phone||'').replace(/\D/g,'').slice(-10)).filter(p => p.length === 10));
+  const enrolled = v => { const p = String(v.phone||'').replace(/\D/g,'').slice(-10); return p.length === 10 && phones.has(p); };
+  const vis = VIS.filter(v => rfIn(v.createdAt, r));
+  const visTM = VIS.filter(v => rfIn(v.createdAt, rfDates({mode:'month'}))).length;
+  const visLM = VIS.filter(v => rfIn(v.createdAt, rfDates({mode:'lastmonth'}))).length;
+  const notes = TYN.filter(t => rfIn(t.date || t.createdAt, r));
+  const rows = approved().filter(m => m.role !== 'admin').map(m => {
+    const g = refs.filter(x => x.fromId === m.id), rc = refs.filter(x => x.toId === m.id);
+    const ma = att.filter(a => a.memberId === m.id), pr = ma.filter(a => a.status !== 'absent').length;
+    const tg = notes.filter(n => n.fromId === m.id), tt = notes.filter(n => n.toId === m.id);
+    return {m, given:g.length, recd:rc.length, conv:g.filter(x=>x.status==='converted').length,
+      bizGiven: g.filter(x=>x.status==='converted').reduce((t,x)=>t+(Number(x.value)||0),0) + tg.reduce((t,n)=>t+n.amount,0),
+      bizTaken: rc.filter(x=>x.status==='converted').reduce((t,x)=>t+(Number(x.value)||0),0) + tt.reduce((t,n)=>t+n.amount,0),
+      r2r: DB.r2r.filter(x => (x.aId===m.id||x.bId===m.id) && rfIn(x.date, r)).length,
+      meet: ma.length, pres: pr, abs: ma.length - pr, pct: ma.length ? Math.round(pr*100/ma.length) : 0, ty: tt.length};
+  }).sort((a,b) => b.bizGiven - a.bizGiven);
+  const days = Math.round((d5(r.to) - d5(r.from)) / 86400000) + 1;
+  const prev = {from: addDays5(r.from, -days), to: addDays5(r.from, -1)};
+  const pRefs = DB.referrals.filter(x => rfIn(x.createdTs || x.createdAt, prev));
+  const pVal = pRefs.filter(x => x.status==='converted').reduce((t,x)=>t+(Number(x.value)||0),0);
+  const pVis = VIS.filter(v => rfIn(v.createdAt, prev)).length;
+  const joined = DB.members.filter(m => m.status === 'approved' && rfIn(m.approvedAt || m.appliedAt, r)).length;
+  return {r, refs, conv, val, fixed, att, dates, attPres, vis, visTM, visLM, enrolled, notes, rows, days, pRefs, pVal, pVis, joined};
+}
+function growth5(now, before){ if(!before) return now ? 'new' : '—'; const g = Math.round((now-before)*100/before); return (g>=0?'+':'') + g + '%'; }
+function consolidatedDoc(){
+  const d = consolidatedData();
+  return {title: chapterName() + ' — Consolidated Report', subtitle: rfLabel(rfState('consol','term')) + ': ' + rfSpan(rfState('consol','term')) + ' · ' + scheduleLabel() + ' · ' + termLengthLabel() + ' terms',
+    stem: 'consolidated_' + stamp5(d.r), sheets: [
+      {title:'Overview', headers:['Measure','Value'], rows:[
+        ['Referrals generated', d.refs.length], ['Referrals converted', d.conv.length],
+        ['Awaiting reply', d.refs.filter(x=>x.status==='pending').length], ['Not converted', d.refs.filter(x=>x.status==='not_converted').length],
+        ['Referral value (converted)', d.val], ['Meetings held', d.dates.length], ['Present (incl. leave)', d.attPres],
+        ['Absent', d.att.length - d.attPres], ['Attendance %', d.att.length ? Math.round(d.attPres*100/d.att.length) : 0],
+        ['Visitors', d.vis.length], ['Visitors this month', d.visTM], ['Visitors last month', d.visLM],
+        ['Visitors enrolled as members', d.vis.filter(d.enrolled).length], ['Thank-you notes', d.notes.length],
+        ['Thank-you note value', d.notes.reduce((t,n)=>t+n.amount,0)], ['Members joined', d.joined], ['Active members now', approved().length]]},
+      {title:'Referral statistics', headers:['Period','Referrals','Converted','Converted value'], rows: d.fixed},
+      {title:'Member-wise performance', headers:['Member','Role','Given','Received','Converted','Business given','Business received','R2R','Meetings','Present','Absent','Attendance %','Thank-you notes'],
+        rows: d.rows.map(x => [x.m.name, roleTag(x.m.role)||'Member', x.given, x.recd, x.conv, x.bizGiven, x.bizTaken, x.r2r, x.meet, x.pres, x.abs, x.pct, x.ty])},
+      {title:'Director-wise performance', headers:['Director','Role','Given','Business given','R2R','Attendance %'],
+        rows: d.rows.filter(x => roleTag(x.m.role)).map(x => [x.m.name, roleTag(x.m.role), x.given, x.bizGiven, x.r2r, x.pct])},
+      {title:'Meeting-wise attendance', headers:['Meeting','Present','Absent','Attendance %'],
+        rows: d.dates.map(dt => { const day = d.att.filter(a => a.date === dt), p = day.filter(a => a.status !== 'absent').length;
+          return [dmy(dt), p, day.length - p, Math.round(p*100/day.length)]; })},
+      refSheet(d.refs),
+      {title:'Visitors', headers:['Date','Visitor','Company','Invited by','Wants to join','Enrolled'],
+        rows: d.vis.map(v => [dmy(v.createdAt), v.name, v.company, v.invitedBy, v.willing?'Yes':'No', d.enrolled(v)?'Yes':'No'])},
+      {title:'Thank-you notes', headers:['Date','Business given by','Received by','Amount','Note'],
+        rows: d.notes.map(n => [dmy(n.date||n.createdAt), mname(n.fromId), mname(n.toId), n.amount, n.note])}
+    ]};
+}
+function vConsolidated(){
+  if(!canSeeConsolidated()) return '<div class="empty">The Consolidated Report is for the Chairman and the Chapter Growth Director.</div>';
+  const d = consolidatedData(), all = rfState('consol','term').mode === 'all';
+  const st = (l, v, sub, cls, onclick) => `<div class="stat ${cls||''}" ${onclick?`style="cursor:pointer" onclick="${onclick}"`:''}><div class="lbl">${l}</div><div class="val">${v}</div>${sub?`<div class="sub">${sub}</div>`:''}</div>`;
+  const sec = t => `<h3 style="margin:22px 2px 10px;color:var(--blue);font-size:15px">${t}</h3>`;
+  const tbl = (h, rows) => `<div class="card"><div class="tbl-wrap"><table><thead><tr>${h.map(x=>`<th>${x}</th>`).join('')}</tr></thead><tbody>${rows.map(r=>`<tr>${r.map(c=>`<td>${c}</td>`).join('')}</tr>`).join('')}</tbody></table></div></div>`;
+  const rlist = (status) => `RF.reflist={mode:RF.consol.mode,from:RF.consol.from,to:RF.consol.to};RL={scope:'all',who:SESSION.id,status:'${status}'};go('reflist')`;
+  return `<div class="page-head"><div><h2>Consolidated Report</h2><p>${esc(scheduleLabel())} · ${esc(termLengthLabel())} terms</p></div>${dlButtons('consolidatedDoc')}</div>
+  ${rfBar('consol', true)}
+  ${sec('A. Referrals')}
+  <div class="stats">${st('Generated', d.refs.length, '', 'b', rlist(''))}${st('Converted', d.conv.length, inr(d.val), 'g', rlist('converted'))}
+    ${st('Awaiting Reply', d.refs.filter(x=>x.status==='pending').length, '', '', rlist('pending'))}${st('Not Converted', d.refs.filter(x=>x.status==='not_converted').length, '', '', rlist('not_converted'))}</div>
+  ${tbl(['Period','Referrals','Converted','Value'], d.fixed.map(x => [x[0], x[1], x[2], inr(x[3])]))}
+  ${sec('B. Attendance')}
+  <div class="stats">${st('Meetings', d.dates.length,'','b')}${st('Present', d.attPres,'','g')}${st('Absent', d.att.length-d.attPres)}${st('Attendance', (d.att.length?Math.round(d.attPres*100/d.att.length):0)+'%')}</div>
+  ${d.dates.length ? tbl(['Meeting','Present','Absent','%'], d.dates.slice(0,26).map(dt => { const day = d.att.filter(a=>a.date===dt), p = day.filter(a=>a.status!=='absent').length;
+      return [dmy(dt), p, day.length-p, Math.round(p*100/day.length)+'%']; })) : ''}
+  ${sec('C. Visitors')}
+  <div class="stats">${st('Visitors', d.vis.length,'','b')}${st('This Month / Last', d.visTM+' / '+d.visLM)}${st('Want to Join', d.vis.filter(v=>v.willing).length)}
+    ${st('Enrolled as Members', d.vis.filter(d.enrolled).length, d.vis.length ? Math.round(d.vis.filter(d.enrolled).length*100/d.vis.length)+'% conversion' : '', 'g')}</div>
+  ${sec('D. Thank-you Notes & Growth')}
+  <div class="stats">${st('Thank-you Notes', d.notes.length,'','b')}${st('Thank-you Value', inr(d.notes.reduce((t,n)=>t+n.amount,0)),'','g')}
+    ${st('Members Joined', d.joined, approved().length+' active now')}
+    ${all ? '' : st('Referrals vs Before', growth5(d.refs.length, d.pRefs.length), 'previous '+d.days+'d: '+d.pRefs.length) + st('Business vs Before', growth5(d.val, d.pVal), 'previous: '+inr(d.pVal), 'g') + st('Visitors vs Before', growth5(d.vis.length, d.pVis), 'previous: '+d.pVis)}</div>
+  ${sec('E. Member-wise Performance')}
+  <div class="card"><div class="tbl-wrap"><table><thead><tr><th>Member</th><th>Given</th><th>Recd</th><th>Business given</th><th>R2R</th><th>Att.</th></tr></thead><tbody>
+    ${d.rows.map(x => `<tr style="cursor:pointer" onclick="RF.mreport={mode:RF.consol.mode,from:RF.consol.from,to:RF.consol.to};openMemberReport('${x.m.id}')">
+      <td><div style="display:flex;align-items:center;gap:8px">${avatar(x.m,30)}<b>${esc(x.m.name)}</b>${roleBadge(x.m)}</div></td>
+      <td>${x.given}</td><td>${x.recd}</td><td>${inr(x.bizGiven)}</td><td>${x.r2r}</td><td>${x.pct}%</td></tr>`).join('')}
+  </tbody></table></div></div>
+  <div class="hint">Tap a member for their full report.</div>`;
+}
+
+/* =========================================================
+   BOARD MEETING MINUTES — Secretary writes, Directors read
+   ========================================================= */
+const MIN_FIELDS = [['agenda','Meeting Agenda'],['discussion','Discussion Points'],['decisions','Decisions Taken'],
+                    ['action_items','Action Items'],['responsible_persons','Responsible Persons'],['notes','Additional Notes']];
+let MIN_OPEN = null;
+function vMinutes(){
+  if(!isDirector()) return '<div class="empty">Board meeting minutes are visible to directors only.</div>';
+  if(MIN_OPEN){
+    const m = MINUTES.find(x => x.id === MIN_OPEN);
+    if(!m){ MIN_OPEN = null; return vMinutes(); }
+    return `<div class="page-head"><div><h2>${esc(m.title)}</h2>
+      <p>${dmy(m.meeting_date)}${m.meeting_time?' · '+esc(m.meeting_time):''}${m.location?' · '+esc(m.location):''}${m.created_by?' · recorded by '+esc(mname(SHORT[m.created_by]||m.created_by)):''}</p></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn ghost sm" onclick="MIN_OPEN=null;render()">← All minutes</button>
+      <button class="btn ghost sm" onclick="shareMinutes('${m.id}')">Copy text</button>
+      ${canWriteMinutes() ? `<button class="btn sm" onclick="editMinutes('${m.id}')">Edit</button>
+      <button class="btn danger sm" onclick="delMinutes('${m.id}')">Delete</button>` : ''}</div></div>
+      ${MIN_FIELDS.filter(([k]) => (m[k]||'').trim()).map(([k,l]) => `<div class="card"><h3>${l}</h3><div class="card-body" style="white-space:pre-wrap;line-height:1.6">${esc(m[k])}</div></div>`).join('')}`;
+  }
+  return `<div class="page-head"><div><h2>Board Minutes</h2><p>Recorded by the Secretary. Visible to directors only.</p></div>
+    ${canWriteMinutes() ? `<button class="btn" onclick="editMinutes(null)">+ Add Board Meeting Minutes</button>` : ''}</div>
+    ${MINUTES.length ? MINUTES.map(m => `<div class="card" style="cursor:pointer" onclick="MIN_OPEN='${m.id}';render()"><div class="card-body" style="display:flex;justify-content:space-between;gap:10px;align-items:center">
+      <div><b style="font-size:15px">${esc(m.title)}</b><div class="hint">${dmy(m.meeting_date)}${m.meeting_time?' · '+esc(m.meeting_time):''}${m.location?' · '+esc(m.location):''}</div></div><span>›</span></div></div>`).join('')
+      : '<div class="empty">No board minutes yet.</div>'}`;
+}
+function editMinutes(id){
+  const m = id ? MINUTES.find(x => x.id === id) : {};
+  const area = (k,l,rows) => `<div class="field" style="margin-bottom:12px"><label>${l}</label><textarea id="mn_${k}" rows="${rows}">${esc(m[k]||'')}</textarea></div>`;
+  document.getElementById('modalHost').innerHTML = `
+  <div class="overlay" onclick="if(event.target===this)closeModal()"><div class="modal" style="max-width:640px">
+    <h3>${id ? 'Edit Board Minutes' : 'Add Board Meeting Minutes'}</h3>
+    <div class="modal-body"><div id="mnMsg"></div>
+      <div class="grid g2" style="margin-bottom:12px">
+        <div class="field"><label>Board Meeting Date <span class="req">*</span></label>${dateField('mn_date', m.meeting_date || today5())}</div>
+        <div class="field"><label>Meeting Time</label><input id="mn_time" value="${esc(m.meeting_time||'')}" placeholder="e.g. 7:00 PM"></div>
+      </div>
+      <div class="field" style="margin-bottom:12px"><label>Meeting Location</label><input id="mn_location" value="${esc(m.location||'')}"></div>
+      <div class="field" style="margin-bottom:12px"><label>Meeting Title <span class="req">*</span></label><input id="mn_title" value="${esc(m.title||'')}" placeholder="e.g. November Board Meeting"></div>
+      ${area('agenda','Meeting Agenda',3)}${area('discussion','Discussion Points',4)}${area('decisions','Decisions Taken',3)}
+      ${area('action_items','Action Items',3)}${area('responsible_persons','Responsible Persons',2)}${area('notes','Additional Notes',3)}
+    </div>
+    <div class="modal-foot"><button class="btn ghost" onclick="closeModal()">Cancel</button>
+      <button class="btn ok" onclick="saveMinutes(${id ? `'${id}'` : 'null'})">Save Minutes</button></div>
+  </div></div>`;
+}
+async function saveMinutes(id){
+  const v = k => { const e = document.getElementById('mn_'+k); const s = e ? e.value.trim() : ''; return s || null; };
+  const date = toISO(document.getElementById('mn_date').value);
+  if(!date) return note('mnMsg','err','Enter the meeting date as dd/mm/yyyy.');
+  if(!v('title')) return note('mnMsg','err','Give the meeting a title.');
+  const row = {meeting_date: date, meeting_time: v('time'), location: v('location'), title: v('title')};
+  MIN_FIELDS.forEach(([k]) => row[k] = v(k));
+  busy(true);
+  try{
+    const q = id ? SB.from('board_minutes').update(row).eq('id', id) : SB.from('board_minutes').insert(row);
+    const {error} = await q;
+    if(error) return fail('mnMsg', error);
+    closeModal(); await refresh();
+  } finally { busy(false); }
+}
+async function delMinutes(id){
+  const m = MINUTES.find(x => x.id === id);
+  if(!m || !confirm('Delete "' + m.title + '" for every director?')) return;
+  busy(true);
+  try{ const {error} = await SB.from('board_minutes').delete().eq('id', id);
+    if(error) return alert(error.message); MIN_OPEN = null; await refresh(); } finally { busy(false); }
+}
+function shareMinutes(id){
+  const m = MINUTES.find(x => x.id === id); if(!m) return;
+  const t = [chapterName() + ' — Board Meeting Minutes', m.title, [dmy(m.meeting_date), m.meeting_time, m.location].filter(Boolean).join(' · ')]
+    .concat(MIN_FIELDS.filter(([k]) => (m[k]||'').trim()).map(([k,l]) => '\n' + l.toUpperCase() + '\n' + m[k])).join('\n');
+  if(navigator.share) navigator.share({title: m.title, text: t}).catch(()=>{});
+  else if(navigator.clipboard) navigator.clipboard.writeText(t).then(() => alert('Copied. Paste it into WhatsApp or email.'));
+}
+
+/* =========================================================
+   ATTENDANCE HISTORY — correct or delete, with a reason
+   ========================================================= */
+let AH_MEMBER = '';
+function attHistDoc(){
+  const r = rfDates(rfState('atthist','term'));
+  const rows = ATT.filter(a => rfIn(a.date, r) && (!AH_MEMBER || a.memberId === AH_MEMBER)).sort((a,b) => b.date.localeCompare(a.date));
+  const ids = [...new Set(rows.map(a => a.memberId))].sort((a,b) => mname(a).localeCompare(mname(b)));
+  const dates = [...new Set(rows.map(a => a.date))];
+  return {title: chapterName() + ' — Attendance' + (AH_MEMBER ? ' — ' + mname(AH_MEMBER) : ''), subtitle: rfSpan(rfState('atthist','term')), stem: 'attendance_' + stamp5(r),
+    sheets: [
+      {title:'Member-wise', headers:['Member','Meetings','Present','Absent','Attendance %'], rows: ids.map(id => { const l = rows.filter(a => a.memberId === id), p = l.filter(a => a.status !== 'absent').length;
+        return [mname(id), l.length, p, l.length - p, Math.round(p*100/l.length)]; })},
+      {title:'Meeting-wise', headers:['Meeting','Present','Absent','Attendance %'], rows: dates.map(dt => { const l = rows.filter(a => a.date === dt), p = l.filter(a => a.status !== 'absent').length;
+        return [dmy(dt), p, l.length - p, Math.round(p*100/l.length)]; })},
+      {title:'All entries', headers:['Meeting','Member','Status'], rows: rows.map(a => [dmy(a.date), mname(a.memberId), ATT_LBL[a.status]||a.status])}
+    ]};
+}
+function vAttHistory(){
+  if(!canTakeRoll()) return '<div class="empty">Attendance Coordinator only.</div>';
+  const r = rfDates(rfState('atthist','term'));
+  const rows = ATT.filter(a => rfIn(a.date, r) && (!AH_MEMBER || a.memberId === AH_MEMBER));
+  const dates = [...new Set(rows.map(a => a.date))].sort().reverse();
+  const pres = rows.filter(a => a.status !== 'absent').length;
+  return `<div class="page-head"><div><h2>Attendance History</h2><p>Tap an entry to correct or delete it. A reason is required and the change goes into the Chairman's audit log.</p></div>${dlButtons('attHistDoc')}</div>
+  ${rfBar('atthist', true)}
+  <div class="card"><div class="card-body" style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+    <select onchange="AH_MEMBER=this.value;render()" style="max-width:320px"><option value="">All members</option>
+      ${approved().filter(m => m.role !== 'admin').map(m => `<option value="${m.id}" ${AH_MEMBER===m.id?'selected':''}>${esc(m.name)}</option>`).join('')}</select>
+    ${AH_MEMBER ? `<button class="btn ghost sm" onclick="RF.mreport={mode:RF.atthist.mode,from:RF.atthist.from,to:RF.atthist.to};MR.tab='attendance';openMemberReport('${AH_MEMBER}')">Full report for ${esc(mname(AH_MEMBER))}</button>` : ''}
+  </div></div>
+  <div class="stats"><div class="stat b"><div class="lbl">Meetings</div><div class="val">${dates.length}</div></div>
+    <div class="stat g"><div class="lbl">Present</div><div class="val" style="color:var(--green)">${pres}</div></div>
+    <div class="stat"><div class="lbl">Absent</div><div class="val" style="color:var(--red)">${rows.length - pres}</div></div>
+    <div class="stat"><div class="lbl">Attendance</div><div class="val">${rows.length ? Math.round(pres*100/rows.length)+'%' : '—'}</div></div></div>
+  ${dates.length ? dates.map(dt => { const day = rows.filter(a => a.date === dt).sort((a,b) => mname(a.memberId).localeCompare(mname(b.memberId)));
+    const p = day.filter(a => a.status !== 'absent').length;
+    return `<div class="card"><h3>${dmy(dt)} <span class="hint" style="font-weight:600">· ${p} present · ${day.length-p} absent</span></h3><div class="tbl-wrap"><table><tbody>
+      ${day.map(a => `<tr style="cursor:pointer" onclick="openAttEdit('${a.id}')"><td>${esc(mname(a.memberId))}</td>
+        <td style="text-align:right">${a.status==='absent'?'<span class="tag no">Absent</span>':a.status==='leave_approved'?'<span class="tag blue">Approved leave</span>':'<span class="tag conv">Present</span>'}</td></tr>`).join('')}
+    </tbody></table></div></div>`; }).join('') : '<div class="empty">No attendance in this period.</div>'}`;
+}
+function openAttEdit(id){
+  const a = ATT.find(x => x.id === id); if(!a) return;
+  document.getElementById('modalHost').innerHTML = `
+  <div class="overlay" onclick="if(event.target===this)closeModal()"><div class="modal">
+    <h3>${esc(mname(a.memberId))} · ${dmy(a.date)}</h3>
+    <div class="modal-body"><div id="aeMsg"></div>
+      <div class="field" style="margin-bottom:12px"><label>Status</label>
+        <select id="aeStatus">${Object.keys(ATT_LBL).map(k => `<option value="${k}" ${a.status===k?'selected':''}>${ATT_LBL[k]}</option>`).join('')}</select></div>
+      <div class="field"><label>Reason <span class="req">*</span></label><textarea id="aeReason" rows="2" placeholder="e.g. Marked absent by mistake — was present"></textarea></div>
+    </div>
+    <div class="modal-foot"><button class="btn danger" onclick="attChange('${id}',true)">Delete entry</button>
+      <button class="btn ghost" onclick="closeModal()">Cancel</button>
+      <button class="btn ok" onclick="attChange('${id}',false)">Save</button></div>
+  </div></div>`;
+}
+async function attChange(id, del){
+  const reason = document.getElementById('aeReason').value.trim();
+  if(reason.length < 3) return note('aeMsg','err','Please give a reason.');
+  if(del && !confirm('Delete this attendance entry?')) return;
+  busy(true);
+  try{
+    const {data, error} = del ? await SB.rpc('attendance_delete', {p_id: id, p_reason: reason})
+      : await SB.rpc('attendance_edit', {p_id: id, p_status: document.getElementById('aeStatus').value, p_reason: reason});
+    if(error) return fail('aeMsg', error);
+    if(!data || data.ok !== true) return fail('aeMsg', (data && data.error) || 'Could not save.');
+    closeModal(); await refresh();
+  } finally { busy(false); }
+}
+
+/* =========================================================
+   AUDIT LOG — Chairman only (the database enforces it)
+   ========================================================= */
+let AUDIT5 = null, AUDIT_Q = {group:'', text:'', member:'', key:''};
+const AUD_TABLES = {members:'Member', chapters:'Chapter', referrals:'Referral', thank_you_notes:'Thank-you note', r2r_meetings:'R2R meeting',
+  attendance:'Attendance', meetings:'Meeting', leave_requests:'Leave request', visitors:'Visitor', finance_entries:'Accounts entry',
+  account_terms:'Accounts term', subscription_payments:'Subscription payment', member_dues:'Member dues', payment_orders:'Online payment',
+  chapter_settings:'Chapter settings', board_minutes:'Board minutes', asks:'Ask', gives:'Give'};
+const AUD_GROUPS = {Members:['members','visitors','leave_requests'], Referrals:['referrals','thank_you_notes','r2r_meetings','asks','gives'],
+  Attendance:['attendance','meetings'], Payments:['subscription_payments','member_dues','payment_orders','finance_entries','account_terms'],
+  Settings:['chapter_settings','chapters','board_minutes']};
+async function loadAudit(){
+  const r = rfDates(rfState('audit','month'));
+  let q = SB.from('audit_log').select('*').order('created_at', {ascending:false}).limit(1500);
+  if(AUDIT_Q.member){
+    const u = uidOf(AUDIT_Q.member), keys = ['member_id','from_member_id','to_member_id','member_a_id','member_b_id','posted_by_id','related_member_id','inducted_member_id'];
+    q = q.or(['record_id.eq.'+u, 'actor_member_id.eq.'+u].concat(keys.flatMap(k => ['new_data->>'+k+'.eq.'+u, 'old_data->>'+k+'.eq.'+u])).join(','));
+  } else {
+    const end = d5(r.to); end.setDate(end.getDate()+1);
+    q = q.gte('created_at', d5(r.from).toISOString()).lt('created_at', end.toISOString());
+  }
+  const {data, error} = await q;
+  AUDIT5 = error ? {error: error.message} : (data || []);
+  AUDIT_Q.key = JSON.stringify([rfState('audit','month'), AUDIT_Q.member]);
+  render();
+}
+function audVal(k, v){
+  if(v == null) return '—';
+  const s = String(v);
+  if(/_id$/.test(k) || k === 'id'){ const m = member(SHORT[s] || s); if(m) return m.name; }
+  if(typeof v === 'boolean') return v ? 'Yes' : 'No';
+  if(/^\d{4}-\d{2}-\d{2}/.test(s)) return dmyt(s);
+  return s.length > 160 ? s.slice(0,160) + '…' : s;
+}
+function audField(k){ const s = k.replace(/_id$/,'').replace(/_/g,' '); return s.charAt(0).toUpperCase() + s.slice(1); }
+function audDescribe(e){
+  const d = e.new_data || e.old_data || {}, nm = x => mname(SHORT[x] || x);
+  const verb = e.action === 'INSERT' ? 'added' : e.action === 'DELETE' ? 'deleted' : 'changed';
+  const what = (AUD_TABLES[e.table_name] || e.table_name).toLowerCase();
+  let subj = '';
+  if(e.table_name === 'members'){
+    if(e.action === 'UPDATE' && (e.changed_fields||[]).indexOf('status') >= 0) return (e.actor_name||'System') + ' set ' + nm(e.record_id) + ' to "' + (e.new_data||{}).status + '"';
+    subj = d.name || nm(e.record_id);
+  } else if(['attendance','leave_requests'].indexOf(e.table_name) >= 0) subj = nm(d.member_id) + ' · ' + dmy(d.meeting_date);
+  else if(['referrals','thank_you_notes'].indexOf(e.table_name) >= 0) subj = nm(d.from_member_id) + ' → ' + nm(d.to_member_id);
+  else if(e.table_name === 'r2r_meetings') subj = nm(d.member_a_id) + ' & ' + nm(d.member_b_id);
+  else if(['visitors','chapters'].indexOf(e.table_name) >= 0) subj = d.name || '';
+  else if(e.table_name === 'board_minutes') subj = d.title || '';
+  return (e.actor_name || 'System') + ' ' + verb + ' ' + what + (subj ? ': ' + subj : '');
+}
+function auditList(){
+  const t = AUDIT_Q.text.toLowerCase();
+  return (Array.isArray(AUDIT5) ? AUDIT5 : []).filter(e => (!AUDIT_Q.group || AUD_GROUPS[AUDIT_Q.group].indexOf(e.table_name) >= 0)
+    && (!t || audDescribe(e).toLowerCase().indexOf(t) >= 0 || String(e.reason||'').toLowerCase().indexOf(t) >= 0));
+}
+function auditDoc(){
+  const rows = [];
+  auditList().forEach(e => {
+    const base = [dmyt(e.created_at), e.actor_name || 'System', e.actor_role || '', AUD_TABLES[e.table_name] || e.table_name, audDescribe(e)];
+    if(e.action === 'UPDATE' && (e.changed_fields||[]).length)
+      e.changed_fields.forEach(f => rows.push(base.slice(0,3).concat(['Edit']).concat(base.slice(3)).concat([audField(f), audVal(f, (e.old_data||{})[f]), audVal(f, (e.new_data||{})[f]), e.reason || ''])));
+    else rows.push(base.slice(0,3).concat([e.action === 'INSERT' ? 'Entry' : 'Deletion']).concat(base.slice(3)).concat(['','','', e.reason || '']));
+  });
+  return {title: chapterName() + ' — Audit Log (confidential)', subtitle: AUDIT_Q.member ? 'Member history: ' + mname(AUDIT_Q.member) : rfSpan(rfState('audit','month')),
+    stem: 'audit_' + today5(), sheets: [{title:'Audit log', headers:['Date & time','Who','Role','Action','Record type','Record','Field','Previous value','Updated value','Reason'], rows}]};
+}
+function vAudit(){
+  if(!canReadAudit()) return '<div class="empty">The audit log is confidential to the Chairman.</div>';
+  const key = JSON.stringify([rfState('audit','month'), AUDIT_Q.member]);
+  if(AUDIT5 === null || AUDIT_Q.key !== key){ setTimeout(loadAudit, 0); return '<div class="empty">Loading the audit log…</div>'; }
+  if(AUDIT5.error) return `<div class="msg err">Could not load the audit log: ${esc(AUDIT5.error)}</div>`;
+  const list = auditList(), m = AUDIT_Q.member && member(AUDIT_Q.member);
+  return `<div class="page-head"><div><h2>Audit Log</h2><p>Who did what, when, and what changed. Confidential — Chairman only. Entries cannot be edited or deleted.</p></div>${dlButtons('auditDoc')}</div>
+  <div class="card"><div class="card-body" style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+    <select onchange="AUDIT_Q.member=this.value;render()" style="max-width:300px"><option value="">Everything (by date)</option>
+      ${DB.members.slice().sort((a,b)=>a.name.localeCompare(b.name)).map(x => `<option value="${x.id}" ${AUDIT_Q.member===x.id?'selected':''}>Member history: ${esc(x.name)}</option>`).join('')}</select>
+    <input placeholder="Search name, record or reason" value="${esc(AUDIT_Q.text)}" onchange="AUDIT_Q.text=this.value;render()" style="max-width:280px">
+  </div></div>
+  ${m ? `<div class="card"><h3>${esc(m.name)}</h3><div class="card-body"><div class="kv">
+      <div class="k">Registered</div><div>${dmy(m.appliedAt)}</div><div class="k">Status</div><div>${esc(m.status)}</div>
+      <div class="k">Joined</div><div>${dmy(m.approvedAt)}</div><div class="k">Phone</div><div>${esc(m.phone||'—')}</div></div>
+      <div class="hint" style="margin-top:8px">Events are recorded from the day the audit log was switched on.</div></div></div>` : rfBar('audit', true)}
+  <div style="display:flex;gap:7px;flex-wrap:wrap;margin-bottom:12px">
+    <button class="btn ${AUDIT_Q.group?'ghost':''} sm" onclick="AUDIT_Q.group='';render()">All</button>
+    ${Object.keys(AUD_GROUPS).map(g => `<button class="btn ${AUDIT_Q.group===g?'':'ghost'} sm" onclick="AUDIT_Q.group='${g}';render()">${g}</button>`).join('')}
+  </div>
+  <div class="hint" style="margin-bottom:8px">${list.length} entr${list.length===1?'y':'ies'}${AUDIT5.length >= 1500 ? ' (newest 1500 — narrow the dates for more)' : ''}</div>
+  ${list.length ? list.map(e => { const fields = e.action === 'UPDATE' ? (e.changed_fields||[]) : Object.keys(e.new_data || e.old_data || {}).filter(k => ['id','chapter_id','created_at','updated_at'].indexOf(k) < 0 && (e.new_data||e.old_data)[k] != null && String((e.new_data||e.old_data)[k]) !== '');
+    const col = e.action === 'INSERT' ? 'var(--green)' : e.action === 'DELETE' ? 'var(--red)' : 'var(--blue)';
+    return `<details class="card" style="padding:0"><summary style="padding:12px 16px;cursor:pointer;list-style:none">
+      <b style="color:${col}">${e.action === 'INSERT' ? '+' : e.action === 'DELETE' ? '✕' : '✎'}</b> <b>${esc(audDescribe(e))}</b>
+      <div class="hint">${dmyt(e.created_at)}${e.actor_role ? ' · ' + esc(e.actor_role) : ''}${e.reason ? ' · Reason: ' + esc(e.reason) : ''}</div></summary>
+      <div class="card-body" style="padding-top:0"><div class="kv">${fields.map(f => `<div class="k">${esc(audField(f))}</div><div>${e.action === 'UPDATE'
+        ? `<span style="color:var(--red);text-decoration:line-through">${esc(audVal(f,(e.old_data||{})[f]))}</span> → <b style="color:var(--green)">${esc(audVal(f,(e.new_data||{})[f]))}</b>`
+        : esc(audVal(f,(e.new_data||e.old_data)[f]))}</div>`).join('')}</div></div></details>`; }).join('')
+    : '<div class="empty">Nothing recorded for this selection.</div>'}`;
+}
+
+/* =========================================================
+   NAVIGATION, VIEWS, CLICKABLE DASHBOARD
+   ========================================================= */
+const V5_ICONS = {chsettings:'⚙', minutes:'\u{1F4DD}', reflist:'↔', consolidated:'\u{1F4CA}', atthist:'\u{1F5D3}', audit:'\u{1F512}', mreport:'\u{1F464}'};
+function v5NavItems(){
+  const extra = [];
+  extra.push(['reflist','Referral List']);
+  if(canSeeConsolidated()) extra.push(['consolidated','Consolidated Report']);
+  if(canTakeRoll())        extra.push(['atthist','Attendance History']);
+  if(isDirector())         extra.push(['minutes','Board Minutes']);
+  if(canEditSettings())    extra.push(['chsettings','Chapter Settings']);
+  if(canReadAudit())       extra.push(['audit','Audit Log']);
+  return extra;
+}
+const _buildNavV5 = buildNav;
+buildNav = function(){
+  _buildNavV5();
+  const nav = document.getElementById('nav'); if(!nav || !SESSION) return;
+  const more = nav.querySelector('button[data-icon="≡"]');
+  const make = ([k,l]) => { const b = document.createElement('button'); b.className = CUR===k ? 'on' : '';
+    b.setAttribute('data-icon', V5_ICONS[k] || '•'); b.textContent = l; b.onclick = () => go(k); return b; };
+  const items = v5NavItems().filter(([k]) => !nav.querySelector(`button[onclick="go('${k}')"]`));
+  if(more){
+    /* phone: the extra screens live in the More sheet */
+    const old = more.onclick;
+    more.onclick = function(){
+      const sheetBtns = items.map(it => { const b = make(it); b.setAttribute('onclick', "go('" + it[0] + "')"); return b; });
+      const prev = window.openMoreSheet; window.openMoreSheet = function(rest){ return prev(rest.concat(sheetBtns)); };
+      try{ old(); } finally { window.openMoreSheet = prev; }
+    };
+    if(items.some(([k]) => k === CUR)) more.className = 'on';
+  } else {
+    const profile = [...nav.children].find(b => (b.getAttribute('onclick')||'').indexOf("go('profile')") >= 0);
+    items.forEach(it => { const b = make(it); b.setAttribute('onclick', "go('" + it[0] + "')"); nav.insertBefore(b, profile || null); });
+  }
+};
+const _viewV5 = view;
+view = function(){
+  switch(CUR){
+    case 'chsettings':   return vSettings5();
+    case 'minutes':      return vMinutes();
+    case 'reflist':      return vRefList();
+    case 'consolidated': return vConsolidated();
+    case 'mreport':      return vMemberReport();
+    case 'atthist':      return vAttHistory();
+    case 'audit':        return vAudit();
+  }
+  return _viewV5();
+};
+const _renderV5 = render;
+render = function(){
+  if(SESSION && accessRestricted()){
+    const nav = document.getElementById('nav'); if(nav) nav.innerHTML = '';
+    document.getElementById('app').innerHTML = vRestricted();
+    return;
+  }
+  _renderV5();
+  if(SESSION && CUR === 'dash') v5Dashboard();
+};
+/* Banners on top of the dashboard, and every figure opens its records. */
+function v5Dashboard(){
+  const app = document.getElementById('app'); if(!app) return;
+  const top = accessBanner() + settingsBanner();
+  if(top){ const div = document.createElement('div'); div.innerHTML = top; app.insertBefore(div, app.firstChild); }
+  const go2 = {
+    'referrals given':   () => openRefList('given'),
+    'referrals received':() => openRefList('received'),
+    'business given value': () => { RF.mreport = {mode:'all'}; MR.tab = 'business'; openMemberReport(SESSION.id); },
+    'business taken value': () => { RF.mreport = {mode:'all'}; MR.tab = 'business'; openMemberReport(SESSION.id); },
+    'r2r meetings':      () => go(isBoss() ? 'allr2r' : 'r2r'),
+    'approved members':  () => go('members'),
+    'pending approvals': () => go('approvals'),
+    'total referrals':   () => openRefList('all'),
+    'business converted':() => openRefList('all', 'converted')
+  };
+  app.querySelectorAll('.stat').forEach(s => {
+    const l = s.querySelector('.lbl'); if(!l) return;
+    const fn = go2[l.textContent.trim().toLowerCase()];
+    if(fn){ s.style.cursor = 'pointer'; s.title = 'Open'; s.onclick = fn; }
+  });
+}
+
 </script>
 </body>
 </html>
